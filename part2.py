@@ -1,3 +1,6 @@
+# Adnaan Chida
+# adnaan.chida@gmail.com
+
 # part 2
 
 def encode(image):
