@@ -3,6 +3,15 @@ import numpy as np
 
 NB_QUBITS = 5
 
+# Load all images
+def load_images():
+    np.load('images.npy')
+    return images
+
+def load_image(image_id):
+    return images[image_id]
+
+images = np.load('images.npy')
 
 def pixel_value_to_theta(pixel: int) -> float:
     return pixel / 255 * (np.pi/2)
