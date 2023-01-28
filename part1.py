@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 
 # Image properties
-SIZE = 3  # 28 # Image width
+SIZE = 5  # 28 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -168,9 +168,9 @@ if __name__ == "__main__":
 
     # print(image)
 
-    image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
+    #image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
     # image = np.array([128]*16)
-    image = image[:NB_PX]
+    #image = image[:NB_PX]
     print(image)
 
     circuit = encode(image)
