@@ -3,13 +3,14 @@ from qiskit import Aer
 import qiskit.circuit.library
 from qiskit import transpile, assemble
 from qiskit.visualization import plot_histogram
+from qiskit.circuit.library import RYGate
 
 import numpy as np
 import math
 
-SIZE = 28
+SIZE = 2#28
 N = math.ceil(math.log2(SIZE))
-NB_QUBITS = 3 #2*N + 1
+NB_QUBITS = 2*N + 1
 
 def load_images(path: str):
     return np.load(path)
@@ -22,7 +23,7 @@ def theta_to_pixel_value(theta: float) -> int:
 
 def switch_x(circuit: qiskit.QuantumCircuit, pixel_position: int):
     if pixel_position == 0:
-        return
+        return circuit
     
     previous_position = pixel_position - 1
 
@@ -39,27 +40,21 @@ def frqi_encode(image):
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
 
     # Get the theta values for each pixel
+    image = image.flatten()
     thetas = [pixel_value_to_theta(pixel) for pixel in image]
 
     # Apply Hadamard gates for all qubits except the last one
     for i in range(NB_QUBITS - 1):
         circuit.h(i)
 
+    ry_qbits = list(range(NB_QUBITS))
     # Apply the rotation gates
     for i in range(SIZE * SIZE):
         theta = thetas[i]
-        # Get the binary representation of the index
-        binary = bin(i)[2:].zfill(N)
-        print(binary)
-        # Apply the rotation gates
-        for j in range(N):
-            if binary[j] == '1':
-                circuit.x(j)
-        c3ry = qiskit.circuit.library.RYGate(theta).control(NB_QUBITS - 1)
-        circuit.append(c3ry, list(range(NB_QUBITS)))
-        for j in range(N):
-            if binary[j] == '1':
-                circuit.x(j)
+        circuit = switch_x(circuit, i)
+        print(theta)
+        c3ry = RYGate(theta).control(NB_QUBITS - 1)
+        circuit.append(c3ry, ry_qbits)
     
     circuit.measure_all()
     # Print the circuit
