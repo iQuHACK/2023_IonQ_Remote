@@ -1,3 +1,4 @@
+from collections import Counter
 import qiskit
 from qiskit import Aer
 import qiskit.circuit.library
@@ -11,8 +12,13 @@ import numpy as np
 import math
 from pprint import pprint
 
-# image properties
-SIZE = 3  # 28 # image width
+from typing import Dict, Union
+
+from sklearn.metrics import mean_squared_error
+
+
+# Image properties
+SIZE = 3  # 28 # Image width
 NB_PX = SIZE**2  # 784
 
 # quantum parameters
@@ -34,12 +40,12 @@ def theta_to_pixel_value(theta: float) -> int:
     return int(theta / (np.pi / 2) * 255)
 
 
-def get_proba(counts):
+def get_proba(counts: dict) -> dict:
     sums = sum(map(lambda x: x[1], counts.items()))
     return {key: value / sums for key, value in counts.items()}
 
 
-def encode(image):
+def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
 
     # Get the theta values for each pixel
@@ -75,7 +81,7 @@ def encode(image):
     return circuit
 
 
-def decode(counts):
+def decode(counts: dict) -> np.ndarray:
     histogram = get_proba(counts)
     img = np.zeros(NB_PX)  # we have a square image
 
@@ -104,7 +110,7 @@ def decode(counts):
     return img.reshape(SIZE, SIZE)
 
 
-def simulator(circuit):
+def simulator(circuit: qiskit.QuantumCircuit) -> dict:
     # Simulate the circuit
     aer_sim = Aer.get_backend("aer_simulator")
     t_qc = transpile(circuit, aer_sim)
@@ -114,12 +120,40 @@ def simulator(circuit):
     return result.get_counts(circuit)
 
 
-def run_part1(image):
+def run_part1(image: np.ndarray) -> Union[qiskit.QuantumCircuit, np.ndarray]:
     circuit = encode(image)
     counts = simulator(circuit)
     img = decode(counts)
     return circuit, img
 
+def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
+    """Returns the number of gate operations with each number of qubits."""
+    return Counter([len(gate[1]) for gate in circuit.data])
+
+def image_mse(image1,image2):
+    # Using sklearns mean squared error:
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
+    return mean_squared_error(image1, image2)
+
+def grading(dataset):
+    n=len(dataset)
+    mse=0
+    gatecount=0
+
+    for data in dataset:
+        circuit, image_re = run_part1(data['image'])
+        # Count 2-qubit gates in circuit
+        gatecount += count_gates(circuit)[2]
+        
+        # Calculate MSE
+        mse += image_mse(data['image'],image_re)
+        
+    # Fidelity of reconstruction
+    f = 1 - mse
+    gatecount = gatecount / n
+
+    # Score for Part 1
+    return f * (0.999 ** gatecount)
 
 if __name__ == "__main__":
     image = load_images("data/images.npy")[5]
