@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 
 # Image properties
-SIZE = 5  # 28 # Image width
+SIZE = 8  # 28 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -174,6 +174,7 @@ if __name__ == "__main__":
     print(image)
 
     circuit = encode(image)
+    print(count_gates(circuit))
 
     # Simulate the circuit
     aer_sim = Aer.get_backend("aer_simulator")
@@ -187,6 +188,9 @@ if __name__ == "__main__":
 
     # Decode the histogram
     img = decode(get_proba(counts))
+    img = img.flatten()
     print(img.flatten())
-    plt.hist(img.flatten())
-    plt.show()
+    print(img[:28*(len(img) // 28)].reshape(len(img) // 28, 28))
+    print(img)
+    # plt.hist(img.flatten())
+    # plt.show()
