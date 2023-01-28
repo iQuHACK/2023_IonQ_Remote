@@ -72,6 +72,8 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
         for j in range(NB_QUBITS):
             if switch[j] == "1":
                 circuit.x(j - 1)
+        # TODO: Is this a 2-qubit gate?? -> If not we have to reformulate using 2-qubit gates only (RYGate + CNOT)
+        # TODO: This method may be too slow: as such we have to compress the image by grouping pixels of the same intensity together
         c3ry = RYGate(2 * theta).control(NB_QUBITS - 1)
         circuit.append(c3ry, ry_qbits)
 
