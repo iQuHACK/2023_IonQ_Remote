@@ -81,20 +81,25 @@ def decode(histogram):
         n0 = 1
 
         if cos_str in histogram:
-            prob_cos = histogram[cos_str]**2
+            prob_cos = histogram[cos_str]
         else:
             prob_cos = 0
 
         # not needed?
         if sin_str in histogram:
-            prob_sin = histogram[sin_str]**2
+            prob_sin = histogram[sin_str]
         else:
             prob_sin = 0
 
         print(n0, cos_str, sin_str)
         print(prob_cos, prob_sin)
-        theta = math.acos(prob_cos)
-        theta = np.pi/2*prob_sin/(prob_cos + prob_sin)
+        print(2 ** N * np.sqrt(prob_cos))
+
+        theta = math.acos(np.clip(2 ** N * np.sqrt(prob_cos), 0, 1))
+        if sin_str in histogram:
+            print(2 ** N * np.clip(np.sqrt(prob_sin), 0, 1))
+            theta = math.asin(np.clip(2 ** N *np.sqrt(prob_sin), 0, 1))
+        #theta = np.pi/2*(prob_sin/(prob_cos + prob_sin)
         print(theta)
 
         img[i] = theta_to_pixel_value(theta)
@@ -116,7 +121,9 @@ if __name__ == "__main__":
     #print(image)
     # print((image.flatten() * 255).astype(int))
     #image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
-    image = np.array([128]*16)
+    #image = np.array([128]*16)
+    image = np.array([0, 100, 200, 255, 0, 100, 200, 255, 0, 255, 0, 255, 0, 255, 0, 120])
+
     image = image[:NB]
     print(2**SIZE-1)
     circuit = frqi_encode(image)
