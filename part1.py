@@ -34,7 +34,12 @@ def theta_to_pixel_value(theta: float) -> int:
     return int(theta / (np.pi / 2) * 255)
 
 
-def frqi_encode(image):
+def get_proba(counts):
+    sums = sum(map(lambda x: x[1], counts.items()))
+    return {key: value / sums for key, value in counts.items()}
+
+
+def encode(image):
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
 
     # Get the theta values for each pixel
@@ -70,7 +75,8 @@ def frqi_encode(image):
     return circuit
 
 
-def decode(histogram):
+def decode(counts):
+    histogram = get_proba(counts)
     img = np.zeros(NB_PX)  # we have a square image
 
     for i in range(NB_PX):
@@ -98,9 +104,21 @@ def decode(histogram):
     return img.reshape(SIZE, SIZE)
 
 
-def get_proba(counts):
-    sums = sum(map(lambda x: x[1], counts.items()))
-    return {key: value / sums for key, value in counts.items()}
+def simulator(circuit):
+    # Simulate the circuit
+    aer_sim = Aer.get_backend("aer_simulator")
+    t_qc = transpile(circuit, aer_sim)
+    qobj = assemble(t_qc, shots=16384)
+
+    result = aer_sim.run(qobj).result()
+    return result.get_counts(circuit)
+
+
+def run_part1(image):
+    circuit = encode(image)
+    counts = simulator(circuit)
+    img = decode(counts)
+    return circuit, img
 
 
 if __name__ == "__main__":
@@ -115,7 +133,7 @@ if __name__ == "__main__":
     image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
     # image = np.array([128]*16)
 
-    circuit = frqi_encode(image)
+    circuit = encode(image)
 
     # Simulate the circuit
     aer_sim = Aer.get_backend("aer_simulator")
