@@ -5,10 +5,9 @@ NB_QUBITS = 5
 
 # Load all images
 def load_images():
-    np.load('images.npy')
-    return images
+    return np.load('images.npy')
 
-def load_image(image_id):
+def load_image(images, image_id):
     return images[image_id]
 
 
