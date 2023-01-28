@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import math
+from pprint import pprint
 
 SIZE = 3#28
 N = math.ceil(math.log2(SIZE))
@@ -69,35 +70,30 @@ def frqi_encode(image):
 def decode(histogram):
     nb_px = 16
     img = np.zeros(nb_px)
-    print(histogram)
-
+    pprint(histogram)
+ 
     for i in range(nb_px):
         print(i)
-        bin_str = np.binary_repr(i, width=NB_QUBITS - 1)
+        bin_str: str = np.binary_repr(i, width=NB_QUBITS - 1)
         print(bin_str)
         cos_str = "0" + bin_str[::-1]
         sin_str = "1" + bin_str[::-1]
 
-        n0 = 1
-
         if cos_str in histogram:
             prob_cos = histogram[cos_str]**2
+            theta = math.acos(2**N * math.sqrt(prob_cos))
         else:
             prob_cos = 0
 
         # not needed?
         if sin_str in histogram:
             prob_sin = histogram[sin_str]**2
+            theta = math.asin(2**N * math.sqrt(prob_sin))
         else:
             prob_sin = 0
 
-        print(n0, cos_str, sin_str)
-        print(prob_cos, prob_sin)
-        theta = math.acos(prob_cos)
-        theta = np.pi/2*prob_sin/(prob_cos + prob_sin)
-        print(theta)
-
         img[i] = theta_to_pixel_value(theta)
+
 
     return img#.reshape(SIZE, SIZE)
 
@@ -115,8 +111,8 @@ if __name__ == "__main__":
 
     #print(image)
     # print((image.flatten() * 255).astype(int))
-    #image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
-    image = np.array([128]*16)
+    image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
+    # image = np.array([128]*16)
     # image = image[:SIZE*SIZE]
     print(2**SIZE-1)
     circuit = frqi_encode(image)
@@ -130,4 +126,4 @@ if __name__ == "__main__":
     print(len(counts))
     # Decode the histogram
     img = decode(get_proba(counts))
-    print(img.flatten())  
+    print(img)  
