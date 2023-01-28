@@ -1,7 +1,16 @@
 import qiskit
 import numpy as np
 
+
 NB_QUBITS = 10 # 2*n, no color info
+
+# Load all images
+def load_images():
+    return np.load('images.npy')
+
+def load_image(images, image_id):
+    return images[image_id]
+
 
 def pixel_value_to_theta(pixel: int) -> float:
     return pixel / 255 * (np.pi/2)
