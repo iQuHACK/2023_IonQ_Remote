@@ -1,17 +1,21 @@
-import cirq
 import qiskit
 import numpy as np
 
+NB_QUBITS = 5
 
-def encode_cirq(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
+
+def pixel_value_to_theta(pixel: int) -> float:
+    return pixel / 255 * (np.pi/2)
+
 
 def encode_qiskit(image):
-    q = qiskit.QuantumRegister(3)
+    q = qiskit.QuantumRegister(NB_QUBITS)
     circuit = qiskit.QuantumCircuit(q)
+    
+    for i in range(NB_QUBITS):
+        pass
+    
+    
     if image[0][0]==0:
         circuit.rx(np.pi,0)
     return circuit
