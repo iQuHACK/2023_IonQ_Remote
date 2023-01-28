@@ -14,10 +14,12 @@ SIZE = 3#28
 N = math.ceil(math.log2(SIZE))
 NB_QUBITS = 2*N + 1
 
-def load_images(path: str):
-    return np.load(path)
+def load_images(path: str) -> np.ndarray:
+    images = np.load(path)
+    images = images / max(images.flatten()) * 255
+    return images
 
-def pixel_value_to_theta(pixel: int) -> float:
+def pixel_value_to_theta(pixel: float) -> float:
     return pixel / 255 * (np.pi/2)
 
 def theta_to_pixel_value(theta: float) -> int:
