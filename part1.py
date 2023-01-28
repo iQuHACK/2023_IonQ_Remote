@@ -13,6 +13,7 @@ import math
 SIZE = 3#28
 N = math.ceil(math.log2(SIZE))
 NB_QUBITS = 2*N + 1
+NB = 2**(N*2)
 
 def load_images(path: str) -> np.ndarray:
     images = np.load(path)
@@ -39,10 +40,10 @@ def frqi_encode(image):
 
     ry_qbits = list(range(NB_QUBITS))
 
-    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [bin(i ^ (i-1))[2:].zfill(NB_QUBITS) for i in range(1, 16)]
+    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [bin(i ^ (i-1))[2:].zfill(NB_QUBITS) for i in range(1, NB)]
 
     # Apply the rotation gates
-    for i in range(16):
+    for i in range(NB):
         theta = thetas[i]
 
         switch = switches[i]
@@ -67,11 +68,10 @@ def frqi_encode(image):
     return circuit
 
 def decode(histogram):
-    nb_px = 16
-    img = np.zeros(nb_px)
+    img = np.zeros(NB)
     print(histogram)
 
-    for i in range(nb_px):
+    for i in range(NB):
         print(i)
         bin_str = np.binary_repr(i, width=NB_QUBITS - 1)
         print(bin_str)
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     # print((image.flatten() * 255).astype(int))
     #image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
     image = np.array([128]*16)
-    # image = image[:SIZE*SIZE]
+    image = image[:NB]
     print(2**SIZE-1)
     circuit = frqi_encode(image)
     # Simulate the circuit
@@ -131,3 +131,5 @@ if __name__ == "__main__":
     # Decode the histogram
     img = decode(get_proba(counts))
     print(img.flatten())  
+    plt.hist(img.flatten())
+    plt.show()
