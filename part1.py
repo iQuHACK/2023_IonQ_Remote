@@ -1,3 +1,6 @@
+# Adnaan Chida
+# adnaan.chida@gmail.com
+
 # part 1
 
 n=len(dataset)
