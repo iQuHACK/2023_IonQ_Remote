@@ -1,8 +1,7 @@
 import qiskit
 import numpy as np
 
-NB_QUBITS = 5
-
+NB_QUBITS = 10 # 2*n, no color info
 
 def pixel_value_to_theta(pixel: int) -> float:
     return pixel / 255 * (np.pi/2)
@@ -13,11 +12,13 @@ def encode_qiskit(image):
     circuit = qiskit.QuantumCircuit(q)
     
     for i in range(NB_QUBITS):
-        pass
+        circuit.h(i)
+        
+    circuit.barrier()
     
     
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
+    
+    print(circuit)
     return circuit
 
 
@@ -27,3 +28,7 @@ def decode(histogram):
     else:
         image=[[1,1],[1,1]]
     return image
+
+
+if __name__ == "__main__":
+    pass
