@@ -9,7 +9,7 @@ import math
 
 SIZE = 28
 N = math.ceil(math.log2(SIZE))
-NB_QUBITS = 3 # 2*N + 1
+NB_QUBITS = 3 #2*N + 1
 
 def load_images(path: str):
     return np.load(path)
@@ -20,6 +20,21 @@ def pixel_value_to_theta(pixel: int) -> float:
 def theta_to_pixel_value(theta: float) -> int:
     return int(theta / (np.pi/2) * 255)
 
+def switch_x(circuit: qiskit.QuantumCircuit, pixel_position: int):
+    if pixel_position == 0:
+        return
+    
+    previous_position = pixel_position - 1
+
+    N = NB_QUBITS - 1
+    prev_repr = np.binary_repr(previous_position, width=N)
+    curr_repr = np.binary_repr(pixel_position, width=N)
+
+    for i in range(N):
+        if prev_repr[i] != curr_repr[i]:
+            circuit.x(i)
+    return circuit
+
 def frqi_encode(image):
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
 
@@ -29,24 +44,22 @@ def frqi_encode(image):
     # Apply Hadamard gates for all qubits except the last one
     for i in range(NB_QUBITS - 1):
         circuit.h(i)
-    
+
     # Apply the rotation gates
-    theta = 0
-    c3ry = qiskit.circuit.library.RYGate(theta).control(2)
-    circuit.append(c3ry, [0, 1, 2])
-
-    circuit.x(1)
-    c3ry = qiskit.circuit.library.RYGate(theta).control(2)
-    circuit.append(c3ry, [0, 1, 2])
-
-    circuit.x(0)
-    circuit.x(1)
-    c3ry = qiskit.circuit.library.RYGate(theta).control(2)
-    circuit.append(c3ry, [0, 1, 2])
-
-    circuit.x(1)
-    c3ry = qiskit.circuit.library.RYGate(theta).control(2)
-    circuit.append(c3ry, [0, 1, 2])
+    for i in range(SIZE * SIZE):
+        theta = thetas[i]
+        # Get the binary representation of the index
+        binary = bin(i)[2:].zfill(N)
+        print(binary)
+        # Apply the rotation gates
+        for j in range(N):
+            if binary[j] == '1':
+                circuit.x(j)
+        c3ry = qiskit.circuit.library.RYGate(theta).control(NB_QUBITS - 1)
+        circuit.append(c3ry, list(range(NB_QUBITS)))
+        for j in range(N):
+            if binary[j] == '1':
+                circuit.x(j)
     
     circuit.measure_all()
     # Print the circuit
