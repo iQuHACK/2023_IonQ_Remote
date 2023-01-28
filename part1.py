@@ -19,12 +19,12 @@ from sklearn.metrics import mean_squared_error
 
 # Image properties
 SIZE = 3  # 28 # Image width
-NB_PX = SIZE**2  # 784
+NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
 N = math.ceil(math.log2(SIZE))
 NB_QUBITS = 2 * N + 1
-
+NB_PX = 2 ** (2 * N)
 
 def load_images(path: str) -> np.ndarray:
     images = np.load(path)
@@ -51,6 +51,7 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
     # Get the theta values for each pixel
     image = image.flatten()
     thetas = [pixel_value_to_theta(pixel) for pixel in image]
+    thetas += [0] * (NB_PX - NB_PX_IMG)
 
     # Apply Hadamard gates for all qubits except the last one
     for i in range(NB_QUBITS - 1):
@@ -95,20 +96,21 @@ def decode(counts: dict) -> np.ndarray:
         sin_str = "1" + bin_str[::-1]
 
         if cos_str in histogram:
-            prob_cos = histogram[cos_str] ** 2
-            theta = math.acos(2**N * math.sqrt(prob_cos))
+            prob_cos = histogram[cos_str]
+            theta = math.acos(np.clip(2**N * math.sqrt(prob_cos), 0, 1))
         else:
             prob_cos = 0
 
         # not needed?
         if sin_str in histogram:
-            prob_sin = histogram[sin_str] ** 2
-            theta = math.asin(2**N * math.sqrt(prob_sin))
+            prob_sin = histogram[sin_str]
+            theta = math.asin(np.clip(2**N * math.sqrt(prob_sin), 0, 1))
         else:
             prob_sin = 0
 
         img[i] = theta_to_pixel_value(theta)
 
+    img = img[:NB_PX_IMG]
     return img.reshape(SIZE, SIZE)
 
 
@@ -168,6 +170,8 @@ if __name__ == "__main__":
 
     image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
     # image = np.array([128]*16)
+    image = image[:NB_PX]
+    print(image)
 
     circuit = encode(image)
 
