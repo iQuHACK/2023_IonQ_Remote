@@ -37,10 +37,10 @@ def frqi_encode(image):
 
     ry_qbits = list(range(NB_QUBITS))
 
-    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [bin(i ^ (i-1))[2:].zfill(NB_QUBITS) for i in range(1, SIZE * SIZE)]
+    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [bin(i ^ (i-1))[2:].zfill(NB_QUBITS) for i in range(1, 16)]
 
     # Apply the rotation gates
-    for i in range(SIZE * SIZE):
+    for i in range(16):
         theta = thetas[i]
 
         switch = switches[i]
@@ -65,7 +65,7 @@ def frqi_encode(image):
     return circuit
 
 def decode(histogram):
-    nb_px = SIZE * SIZE
+    nb_px = 16
     img = np.zeros(nb_px)
     print(histogram)
 
@@ -76,30 +76,30 @@ def decode(histogram):
         cos_str = "0" + bin_str[::-1]
         sin_str = "1" + bin_str[::-1]
 
-        n0 = 2 ** NB_QUBITS
+        n0 = 16
 
         if cos_str in histogram:
-            prob_cos = histogram[cos_str] * n0
+            prob_cos = histogram[cos_str]
         else:
             prob_cos = 0
 
         # not needed?
         if sin_str in histogram:
-            prob_sin = histogram[sin_str] * n0
+            prob_sin = histogram[sin_str]
         else:
             prob_sin = 0
 
         print(n0, cos_str, sin_str)
-        prob_cos = np.clip(prob_cos, 0, 1)
-        prob_sin = np.clip(prob_sin, 0, 1)
-
         print(prob_cos, prob_sin)
+        prob_cos = np.clip(prob_cos * n0, 0, 1)
+        prob_sin = np.clip(prob_sin * n0, 0, 1)
+
         theta = math.acos(prob_cos)
         print(theta)
 
         img[i] = theta_to_pixel_value(theta)
 
-    return img.reshape(SIZE, SIZE)
+    return img#.reshape(SIZE, SIZE)
 
 def get_proba(counts):
     sums = sum(map(lambda x: x[1], counts.items()))
@@ -115,8 +115,9 @@ if __name__ == "__main__":
 
     #print(image)
     # print((image.flatten() * 255).astype(int))
-    image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 120, 0, 255, 0, 255, 0, 255, 0, 255, 120])
-    image = image[:SIZE*SIZE]
+    #image = np.array([0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 120])
+    image = np.array([128]*16)
+    # image = image[:SIZE*SIZE]
     print(2**SIZE-1)
     circuit = frqi_encode(image)
     # Simulate the circuit
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     result = aer_sim.run(qobj).result()
     counts = result.get_counts(circuit)
     print(counts)
-
+    print(len(counts))
     # Decode the histogram
     img = decode(get_proba(counts))
     print(img.flatten())  
