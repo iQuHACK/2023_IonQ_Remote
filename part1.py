@@ -23,21 +23,6 @@ def pixel_value_to_theta(pixel: int) -> float:
 def theta_to_pixel_value(theta: float) -> int:
     return int(theta / (np.pi/2) * 255)
 
-def switch_x(circuit: qiskit.QuantumCircuit, pixel_position: int):
-    if pixel_position == 0:
-        return circuit
-    
-    previous_position = pixel_position - 1
-
-    N = NB_QUBITS - 1
-    prev_repr = np.binary_repr(previous_position, width=N)
-    curr_repr = np.binary_repr(pixel_position, width=N)
-
-    for i in range(N):
-        if prev_repr[i] != curr_repr[i]:
-            circuit.x(i)
-    return circuit
-
 def frqi_encode(image):
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
 
@@ -51,11 +36,18 @@ def frqi_encode(image):
     circuit.barrier()
 
     ry_qbits = list(range(NB_QUBITS))
+
+    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [bin(i ^ (i-1))[2:].zfill(NB_QUBITS) for i in range(1, SIZE * SIZE)]
+
     # Apply the rotation gates
     for i in range(SIZE * SIZE):
         theta = thetas[i]
-        circuit = switch_x(circuit, i)
-        print(i, theta)
+
+        switch = switches[i]
+        # Apply x gate to the i-th qubit if the i-th bit of the switch is 1
+        for j in range(NB_QUBITS):
+            if switch[j] == '1':
+                circuit.x(j-1)
         c3ry = RYGate(2*theta).control(NB_QUBITS - 1)
         circuit.append(c3ry, ry_qbits)
 
