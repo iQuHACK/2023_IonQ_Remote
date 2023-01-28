@@ -11,7 +11,6 @@ def load_images():
 def load_image(image_id):
     return images[image_id]
 
-images = np.load('images.npy')
 
 def pixel_value_to_theta(pixel: int) -> float:
     return pixel / 255 * (np.pi/2)
