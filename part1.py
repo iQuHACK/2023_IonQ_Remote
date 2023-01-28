@@ -76,25 +76,23 @@ def decode(histogram):
         cos_str = "0" + bin_str[::-1]
         sin_str = "1" + bin_str[::-1]
 
-        n0 = 16
+        n0 = 1
 
         if cos_str in histogram:
-            prob_cos = histogram[cos_str]
+            prob_cos = histogram[cos_str]**2
         else:
             prob_cos = 0
 
         # not needed?
         if sin_str in histogram:
-            prob_sin = histogram[sin_str]
+            prob_sin = histogram[sin_str]**2
         else:
             prob_sin = 0
 
         print(n0, cos_str, sin_str)
         print(prob_cos, prob_sin)
-        prob_cos = np.clip(prob_cos * n0, 0, 1)
-        prob_sin = np.clip(prob_sin * n0, 0, 1)
-
         theta = math.acos(prob_cos)
+        theta = np.pi/2*prob_sin/(prob_cos + prob_sin)
         print(theta)
 
         img[i] = theta_to_pixel_value(theta)
