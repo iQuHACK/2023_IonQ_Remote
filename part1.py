@@ -1,43 +1,37 @@
 import qiskit
 import numpy as np
+import math
 
+SIZE = 28
+N = math.ceil(math.log2(SIZE))
+NB_QUBITS = 2*N + 1
 
-NB_QUBITS = 10 # 2*n, no color info
-
-# Load all images
-def load_images():
-    return np.load('images.npy')
-
-def load_image(images, image_id):
-    return images[image_id]
-
+def load_images(path: str):
+    return np.load(path)
 
 def pixel_value_to_theta(pixel: int) -> float:
     return pixel / 255 * (np.pi/2)
 
+def theta_to_pixel_value(theta: float) -> int:
+    return int(theta / (np.pi/2) * 255)
 
-def encode_qiskit(image):
-    q = qiskit.QuantumRegister(NB_QUBITS)
-    circuit = qiskit.QuantumCircuit(q)
-    
-    for i in range(NB_QUBITS):
+def frqi_encode(image):
+    circuit = qiskit.QuantumCircuit(NB_QUBITS)
+
+    # Get the theta values for each pixel
+    thetas = [pixel_value_to_theta(pixel) for pixel in image]
+
+    # Apply Hadamard gates for all qubits except the last one
+    for i in range(NB_QUBITS - 1):
         circuit.h(i)
-        
-    circuit.barrier()
+    
+    # Apply the rotation gates wrt theta...
     
     
-    
+    # Print the circuit
     print(circuit)
     return circuit
 
-
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
-    return image
-
-
 if __name__ == "__main__":
-    pass
+    image = load_images('data/images.npy')[0]
+    circuit = frqi_encode(image)
