@@ -47,7 +47,6 @@ def split_train_test_data(images: np.ndarray, labels: np.ndarray, train_ratio: f
 #   The Quantum Net is parametrised by the weights of the Classical Net
 # We also need a forward function that will take the input of the classical net and pass it to the quantum net
 # The HybridClassifier class will be the one gluing all the parts together. It will be the one we will train and use to make predictions
-
 class QuantumCircuit:
     def __init__(self, circuit: qiskit.QuantumCircuit, backend=qiskit.Aer.get_backend("aer_simulator"), shots: int = 1024): #TODO Typing
         # This circuit will be parametrised by the weights of a upstream NN
@@ -131,6 +130,7 @@ def test_classifier(test_images: np.ndarray, test_labels: np.ndarray, classifier
         predictions.append(prediction)
     return predictions, mean_squared_error(test_labels, predictions)
 
+
 def run_part2(pickle_path: str, image: np.ndarray) -> Union[qiskit.QuantumCircuit, int]:
     # Load the quantum classifier circuit
     with open(pickle_path, 'rb') as f:
@@ -146,6 +146,7 @@ def run_part2(pickle_path: str, image: np.ndarray) -> Union[qiskit.QuantumCircui
     # Convert histogram to category
     label = histogram_to_category(histogram)
     return circuit, label
+
 
 if __name__ == "__main__":
     images = np.load('data/images.npy')
