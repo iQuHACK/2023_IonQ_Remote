@@ -6,23 +6,51 @@ import os
 from collections import Counter
 from sklearn.metrics import mean_squared_error
 
+import qiskit
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
+from typing import Dict, List, Union
+import matplotlib.pyplot as plt
+
+
+from typing
+
 #define utility functions
 
-def simulate(circuit: cirq.Circuit) -> dict:
+def simulate(circuit: Union[cirq.Circuit, qiskit.QuantumCircuit], backend_='qiskit') -> dict:
     """This funcion simulate a cirq circuit (without measurement) and output results in the format of histogram.
     """
-    simulator = cirq.Simulator()
-    result = simulator.simulate(circuit)
+    if backend_ == 'circ':
+        simulator = cirq.Simulator()
+        result = simulator.simulate(circuit)
+
+        state_vector=result.final_state_vector
+
+        histogram = dict()
+        for i in range(len(state_vector)):
+            population = abs(state_vector[i]) ** 2
+            if population > 1e-9:
+                histogram[i] = population
+
+        return histogram
     
-    state_vector=result.final_state_vector
-    
-    histogram = dict()
-    for i in range(len(state_vector)):
-        population = abs(state_vector[i]) ** 2
-        if population > 1e-9:
-            histogram[i] = population
-    
-    return histogram
+    elif backend_ == 'qiskit':
+        backend = BasicAer.get_backend('statevector_simulator')
+        job = execute(circuit, backend)
+        result = job.result()
+        state_vector = result.get_statevector()
+
+        histogram = dict()
+        for i in range(len(state_vector)):
+            population = abs(state_vector[i]) ** 2
+            if population > 1e-9:
+                histogram[i] = population
+
+        return histogram
+
+    else:
+        raise Exception()
 
 
 def histogram_to_category(histogram):
@@ -34,8 +62,9 @@ def histogram_to_category(histogram):
         digits = bin(int(key))[2:].zfill(20)
         if digits[-1]=='0':
             positive+=histogram[key]
-        
+
     return positive
+
 
 def count_gates(circuit: cirq.Circuit):
     """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""

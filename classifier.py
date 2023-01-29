@@ -6,7 +6,9 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 
+from utils.utils import simulate, histogram_to_label
 
+from sklearn.model_selection import train_test_split
 
 def variational_circuit(x: jnp.ndarray, params: jnp.ndarray, n_layer: int) -> jnp.ndarray:
   # TODO: this has to be replaced with our circuit where x is fed into the encoder and params['w'] is fed into 
@@ -22,7 +24,7 @@ def variational_circuit(x: jnp.ndarray, params: jnp.ndarray, n_layer: int) -> jn
 
 
 
-def run_training(X, y, circuit:'Circuit', simulator:'Simulator', optimizer=None):
+def run_training(X, y, circuit:'Circuit', backend='qiskit', optimizer=None):
     
     n_layers = 2
     batch_size = 32
@@ -31,19 +33,15 @@ def run_training(X, y, circuit:'Circuit', simulator:'Simulator', optimizer=None)
     def circuit_wrapper(x: jnp.ndarray, params: jnp.ndarray) -> jnp.ndarray:
         circuit_fn = circuit.encode(x, params)
         
-        simulator = simulate.run(circuit_fn)
-
-        # TODO histogram to label
-
-        # TODO return label
-        pass
+        histogram = simulate(circuit_fn, backend_=backend)
+        
+        return = histogram_to_label(histogram)
 
     
     def loss(params: optax.Params, batch: jnp.ndarray, labels: jnp.ndarray) -> jnp.ndarray:
-        y_hat = circuit_wrapper(batch, params, circuit_fn)
-
-        # TODO converter histogram_to_label
-        # optax also provides a number of common loss functions.
+        predictions = circuit_wrapper(batch, params, circuit_fn)
+        
+        y_pred = jax.nn.one_hot(y % 2, 2).astype(jnp.float32).reshape(len(labels), 2)
         loss_value = optax.sigmoid_binary_cross_entropy(y_hat, labels).sum(axis=-1)
 
         return loss_value.mean()
@@ -80,6 +78,23 @@ def run_training(X, y, circuit:'Circuit', simulator:'Simulator', optimizer=None)
     if optimizer is None:
         optimizer = optax.adam(learning_rate=1e-2)
     
-    params, losses = fit(initial_params, optimizer)
+    optimal_params, losses = fit(initial_params, optimizer)
     
-    return params, losses
+    # TODO return optimal circuit
+    
+    return optimal_circuit, losses
+
+
+# TODO load data
+
+# TODO train test split
+
+X = np.load('data/images.npy')
+y = np.load('data/labels.npy')
+y_reshape = jax.nn.one_hot(y % 2, 2).astype(jnp.float32).reshape(2000, 2)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y_one_hot, test_size=0.33, random_state=42)
+
+
+circuit_weights, losses = run_training(X_train, y_train, None)
+
