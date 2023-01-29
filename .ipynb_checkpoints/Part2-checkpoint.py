@@ -321,6 +321,3 @@ def run_part2(image):
     return circuit,label
 
 
-
-test()
-qc.draw()
