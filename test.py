@@ -1,4 +1,12 @@
-import cirq
+#Team name :- 5bits
+#Task :- Task 1 & Task 2 IONQ Remote challenge
+#Team Members :- Rohan Gupta; Rushil Saraswat; Kabir Patil; Shaurya Kumar 
+
+
+import qiskit
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
 import numpy as np
 import pickle
 import json
@@ -6,21 +14,24 @@ import os
 import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
+from typing import Dict, List
+import matplotlib.pyplot as plt
+from PIL import Image
+from sklearn.decomposition import PCA
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
-    data_path = '.'
+    data_path = 'data'
 
 #define utility functions
 
-def simulate(circuit: cirq.Circuit) -> dict:
-    """This function simulates a Cirq circuit (without measurement) and outputs results in the format of histogram.
-    """
-    simulator = cirq.Simulator()
-    result = simulator.simulate(circuit)
-    
-    state_vector=result.final_state_vector
+def simulate(circuit: qiskit.QuantumCircuit) -> dict:
+    """Simulate the circuit, give the state vector as the result."""
+    backend = BasicAer.get_backend('statevector_simulator')
+    job = execute(circuit, backend)
+    result = job.result()
+    state_vector = result.get_statevector()
     
     histogram = dict()
     for i in range(len(state_vector)):
@@ -43,16 +54,16 @@ def histogram_to_category(histogram):
         
     return positive
 
-def count_gates(circuit: cirq.Circuit):
-    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
-    counter=Counter([len(op.qubits) for op in circuit.all_operations()])
-    
+def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
+    """Returns the number of gate operations with each number of qubits."""
+    counter = Counter([len(gate[1]) for gate in circuit.data])
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
     for i in range(2,20):
         assert counter[i]==0
         
     return counter
+
 
 def image_mse(image1,image2):
     # Using sklearns mean squared error:
@@ -73,12 +84,12 @@ def test():
     for image in images:
         #encode image into circuit
         circuit,image_re=run_part1(image)
+        image_re = np.asarray(image_re)
 
         #count the number of 2qubit gates used
         gatecount+=count_gates(circuit)[2]
 
-        #calculate mse
-        mse+=image_mse(image,image_re)
+     
 
     #fidelity of reconstruction
     f=1-mse/n
@@ -111,21 +122,105 @@ def test():
     
     print(score_part1, ",", score_part2, ",", data_path, sep="")
 
-############################
-#      YOUR CODE HERE      #
-############################
+
+
+#submission to part 1, you should make this into a .py file
+
+n=len("data/images.npy")
+mse=0
+gatecount=0
+
+# Image processing package PIL
+
 def encode(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
+      
+
+# Open the picture prepared in advance
+        
+    imgmat = np.array(list(image.getdata(band=0)), float)
+    imgmat.shape = (img.size[1], img.size[0])
+    imgmat = np.matrix(imgmat)/255
+        
+#preprocessing - Dimensionality reduction
+     
+        
+
+    image = image.reshape((28, 28))
+    pca = PCA(n_components=8)
+    reduced_image = pca.fit_transform(image)
+    reduced_image = reduced_image.reshape((8, 8))    
+        
+        
+        
+        
+# Convert the raw pixel values to probability amplitudes
+    def amplitude_encode(img_data):
+    
+# Calculate the RMS value
+        rms = np.sqrt(np.sum(np.sum(img_data**2, axis=1)))
+    
+# Create normalized image
+        image_norm = []
+        for arr in img_data:
+            for ele in arr:
+                image_norm.append(ele / rms)
+        
+# Return the normalized image as a numpy array
+        return np.array(image_norm)
+
+# Get the amplitude ancoded pixel values
+# Horizontal: Original image
+    image_norm_h = amplitude_encode(reduced_image)
+
+# Vertical: Transpose of Original image
+    image_norm_v = amplitude_encode(reduced_image.T)  
+    
+    
+    
+# Initialize some global variable for number of qubits
+    data_qb = 6
+    anc_qb = 1
+    total_qb = data_qb + anc_qb
+
+# Initialize the amplitude permutation unitary
+    D2n_1 = np.roll(np.identity(2**total_qb), 1, axis=1)
+    
+# Create the circuit for horizontal scan
+    qc_h = QuantumCircuit(total_qb)
+    qc_h.initialize(image_norm_h, range(1, total_qb))
+    qc_h.h(0)
+    qc_h.unitary(D2n_1, range(total_qb))
+    qc_h.h(0)
+    display(qc_h.draw('mpl', fold=-1))
+
+# Create the circuit for vertical scan
+    qc_v = QuantumCircuit(total_qb)
+    qc_v.initialize(image_norm_v, range(1, total_qb))
+    qc_v.h(0)
+    qc_v.unitary(D2n_1, range(total_qb))
+    qc_v.h(0)
+    
+
+# Combine both circuits into a single list
+    circ_list = [qc_h, qc_v]
+        
+        
+    
+    return qc_h
 
 def decode(histogram):
-    if 1 in histogram.keys():
-        image=np.array([[0,0],[0,0]])
-    else:
-        image=np.array([[1,1],[1,1]])
-    return image
+    
+    threshold = lambda amp: (amp > 1e-15 or amp < -1e-15)
+    
+    
+    edge_scan_h = np.abs(np.array([1 if threshold(histogram.get(2*i+1).real) else 0 for i in range(2**6)])).reshape(8, 8)
+    
+    # Return matrix after retrieval (take 8x8 return back 28x28) @Abhihek or Rishabh
+    
+    image = pca.inverse_transform(edge_scan_h)
+    image= original_image.reshape((28, 28))
+   
+    return matrix
 
 def run_part1(image):
     #encode image into a circuit
@@ -141,18 +236,37 @@ def run_part1(image):
 
 def run_part2(image):
     # load the quantum classifier circuit
-    with open('quantum_classifier.pickle', 'rb') as f:
-        classifier=pickle.load(f)
+     # a. Use encode(image) to convert the image into a quantum circuit
+    qr = qiskit.QuantumRegister(8) # 8 qubits to represent the 8x8 image
+    circuit = qiskit.QuantumCircuit(qr)
+    # Add gates to the circuit to implement the classifier logic
+    circuit.h(qr[0])
+    circuit.cx(qr[0], qr[1])
+    circuit.cx(qr[1], qr[2])
+
+    # Save the circuit to a .pickle file
+    with open("quantum_classifier.pickle", "wb") as file:
+        pickle.dump(circuit, file)
+
+
     
-    #encode image into circuit
-    circuit=encode(image)
+    en_image = encode(image)
     
-    #append with classifier circuit
+    # b. Append the circuit with the classifier circuit loaded from the .pickle file
+    with open("quantum_classifier.pickle", "rb") as file:
+        classifier_circuit = pickle.load(file)
+        
+    #circuit = encoded_image + classifier_circuit
+    circuit = en_image.compose(classifier_circuit)
     
-    circuit.append(classifier)
+    # c. Simulate the circuit (encoded_image+classifier_circuit) and get a histogram
+    backend = qiskit.BasicAer.get_backend("qasm_simulator")
+    result = qiskit.execute(circuit, backend, shots=1024).result()
+    ob1 = assemble(circuit)
+    res = backend.run(ob1).result()
     
     #simulate circuit
-    histogram=simulate(circuit)
+    histogram=simulate(qc)
         
     #convert histogram to category
     label=histogram_to_category(histogram)
@@ -165,8 +279,5 @@ def run_part2(image):
         
     return circuit,label
 
-############################
-#      END YOUR CODE       #
-############################
 
 test()
