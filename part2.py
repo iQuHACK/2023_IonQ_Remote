@@ -47,14 +47,14 @@ def split_train_test_data(images: np.ndarray, labels: np.ndarray, train_ratio: f
 # The HybridClassifier class will be the one gluing all the parts together. It will be the one we will train and use to make predictions
 
 class QuantumCircuit:
-    def __init__(self, circuit, backend=qiskit.Aer.get_backend("aer_simulator"), shots=1024):
+    def __init__(self, circuit: qiskit.QuantumCircuit, backend=qiskit.Aer.get_backend("aer_simulator"), shots: int = 1024): #TODO Typing
         # This circuit will be parametrised by the weights of a upstream NN
         self.circuit = circuit
         self.theta = qiskit.circuit.Parameter('theta')
         self.backend = backend
         self.shots = shots
     
-    def simulate(self, weights: np.ndarray):
+    def simulate(self, weights: np.ndarray) -> dict:
         t_qc = qiskit.transpile(self.circuit, self.backend)
         qobj = qiskit.assemble(t_qc, shots=self.shots, parameter_binds = [{self.theta: weight} for weight in weights])
         job = self.backend.run(qobj)
@@ -66,10 +66,6 @@ class QuantumCircuit:
         return result
 
 
-class Functions:
-    pass
-
-
 class ClassicalNet(nn.Module):
     pass
 
@@ -78,16 +74,14 @@ class QuantumNet(nn.Module):
     pass
 
 
-class HybridClassifier:
-    pass
-
-# Included in the classes maybe
-def train_classifier():
-    pass
-
-
-def compute_loss():
-    pass
+class HybridClassifier(nn.Module):
+    def __init__(self, quantum_net: ClassicalNet, classical_net: QuantumNet) -> None:
+        super(HybridClassifier, self).__init__()
+        self.classical_net = classical_net
+        self.quantum_net = quantum_net
+    
+    def forward(self, x):
+        pass
 
 
 def test_classifier(test_images: np.ndarray, test_labels: np.ndarray, classifier: qiskit.QuantumCircuit) -> Union[list, float]:
