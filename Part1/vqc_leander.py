@@ -31,7 +31,7 @@ def vqc(n_qubits, n_layers, params):
 
 
 n_qubits = 16
-n_layers = 2
+n_layers = 1
 
 def simulate(circuit: qiskit.QuantumCircuit) -> dict:
     """Simulate the circuit, give the state vector as the result."""
@@ -77,7 +77,7 @@ def cost_function(iterator, iterator_val, parameters):
     global BEST_LOSS
     global BEST_PARAMS
     global BEST_VALIDATION
-
+    #print(parameters)
     def f(iterator):
         cost = []
         N = len(iterator)
@@ -174,7 +174,7 @@ with open('../data/labels.npy', 'rb') as f:
 indexes = np.arange(len(images))
 np.random.shuffle(indexes)
 
-n_train = int(0.5 * len(images))
+n_train = int(0.8 * len(images))
 n_val = len(images) - n_train
 
 
@@ -184,7 +184,7 @@ labels = labels[indexes]
 iterator_train = list(zip(images[:n_train], labels[:n_train]))
 iterator_val = list(zip(images[n_train:], labels[n_train:]))
 
-optimizer = SLSQP(maxiter=10)
+optimizer = SPSA(maxiter=50)
 
 p = np.random.random(3*n_qubits*n_layers)*2*np.pi
 
