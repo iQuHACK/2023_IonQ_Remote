@@ -1,5 +1,6 @@
 #Team name :- QChar
 #Task :- Task 1 for IONQ Remote challenge
+#Team Members :- Keerthi Kumaran (kalagars@purdue.edu), Rishab Ghosh(rishabghosh.qc@gmail.com), Abhishek Kumar Jha (akj9565@mavs.uta.edu)
 
 
 import qiskit
