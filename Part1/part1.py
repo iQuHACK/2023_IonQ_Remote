@@ -106,7 +106,6 @@ def encoder(image):
     data = np.ndarray.flatten(image_reduzed) * np.pi
     for i, d in enumerate(data):
         qc.ry(d, q_register[i])
-        qc.measure(q_register[i], c_register[i])
     
     return qc
 

@@ -1,5 +1,5 @@
 import numpy as np
-from qiskit.algorithms.optimizers import COBYLA, ADAM, SPSA
+from qiskit.algorithms.optimizers import COBYLA, ADAM, SPSA, SLSQP
 from part1 import encoder
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Parameter, ParameterVector
@@ -31,7 +31,7 @@ def vqc(n_qubits, n_layers, params):
 
 
 n_qubits = 16
-n_layers = 1
+n_layers = 2
 
 def simulate(circuit: qiskit.QuantumCircuit) -> dict:
     """Simulate the circuit, give the state vector as the result."""
@@ -164,7 +164,7 @@ BEST_PARAMS = None
 BEST_LOSS = 1e3
 BEST_VALIDATION = 1e3
 
-n_process = 8
+n_process = 100
 
 with open('../data/images.npy', 'rb') as f:
     images = np.load(f)
@@ -174,7 +174,7 @@ with open('../data/labels.npy', 'rb') as f:
 indexes = np.arange(len(images))
 np.random.shuffle(indexes)
 
-n_train = int(0.95 * len(images))
+n_train = int(0.5 * len(images))
 n_val = len(images) - n_train
 
 
@@ -184,9 +184,9 @@ labels = labels[indexes]
 iterator_train = list(zip(images[:n_train], labels[:n_train]))
 iterator_val = list(zip(images[n_train:], labels[n_train:]))
 
-optimizer = SPSA(maxiter=50,callback=store_intermediate_result)
+optimizer = SLSQP(maxiter=10)
 
-p = np.random.random(3*n_qubits*n_layers)
+p = np.random.random(3*n_qubits*n_layers)*2*np.pi
 
 objective_function = lambda p: cost_function(iterator_train, iterator_val, p)
                                             
