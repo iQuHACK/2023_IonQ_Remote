@@ -7,6 +7,9 @@ import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
 
+teamname="Feynman's Fashion Rescue"
+
+
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
