@@ -193,7 +193,9 @@ def decode(histogram):
         q_probs.append(np.sum(np.array(np.split(probs, 2 ** q))[np.arange(0, 2 ** q, 2)]))
 
     q_probs = np.array(q_probs)[::-1]
-    data = np.arccos(np.sqrt(q_probs)) * 2 / np.pi
+    data_ = np.sqrt(q_probs)
+    data_[data_ > 1] = 1
+    data = np.arccos(data_) * 2 / np.pi
     image_decoded = np.resize(data, (4, 4))
     result = image_decoded.copy()
     result = apply_decoder(kernels_decoder[0], result)
