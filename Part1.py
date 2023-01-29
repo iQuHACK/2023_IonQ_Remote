@@ -90,3 +90,5 @@ def run_part1(image):
     image_re=decode(histogram)
 
     return circuit,image_re
+
+images[4]
