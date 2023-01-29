@@ -95,8 +95,11 @@ class HybridClassifier(nn.Module):
         self.classical_net = classical_net
         self.quantum_net = quantum_net
     
-    def forward(self, x):
-        pass
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.classical_net(x)
+        x = self.quantum_net(x)
+        # Unsure about the return?
+        return x
 
 
 def test_classifier(test_images: np.ndarray, test_labels: np.ndarray, classifier: qiskit.QuantumCircuit) -> Union[list, float]:
