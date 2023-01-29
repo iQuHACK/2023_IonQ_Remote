@@ -10,30 +10,31 @@ from utils.utils import simulate, histogram_to_label
 
 from sklearn.model_selection import train_test_split
 
-def variational_circuit(x: jnp.ndarray, params: jnp.ndarray, n_layer: int) -> jnp.ndarray:
-  # TODO: this has to be replaced with our circuit where x is fed into the encoder and params['w'] is fed into 
-  x = jnp.dot(x, params['hidden'])
-  x = jax.nn.relu(x)
-  x = jnp.dot(x, params['output'])
-    
-  # TODO: like that
-  #x_ = encoder(x)
-  #x_ = weights(x)
-    
-  return x
+# Import the circuits
+from circuits.encoderFRQI import encode as frqi
+from circuits.encderBASIC import encode as basic_encoder
 
+from circuits.weightsCircuit import encode as weight_layer
 
-
-def run_training(X, y, circuit:'Circuit', backend='qiskit', optimizer=None):
+def run_training(X, y, encoder_fn, classifier_fn, backend='qiskit'):
     
     n_layers = 2
     batch_size = 32
     epochs = 1_000
     
-    def circuit_wrapper(x: jnp.ndarray, params: jnp.ndarray) -> jnp.ndarray:
-        circuit_fn = circuit.encode(x, params)
+    def circuit_wrapper(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
+        circuit = encoder_fn.encode(x)
+        classifier = classifier_fn.encode(w)
         
-        histogram = simulate(circuit_fn, backend_=backend)
+        nq1 = circuit.width()
+        nq2 = classifier.width()
+        
+        nq = max(nq1, nq2)
+        qc = qiskit.QuantumCircuit(nq)
+        qc.append(circuit.to_instruction(), list(range(nq1)))
+        qc.append(classifier.to_instruction(), list(range(nq2)))
+
+        histogram = simulate(qc)
         
         return = histogram_to_label(histogram)
 
@@ -75,14 +76,13 @@ def run_training(X, y, circuit:'Circuit', backend='qiskit', optimizer=None):
         'w': jax.random.normal(shape=[16, n_layers], key=jax.random.PRNGKey(0)),
     }
     
-    if optimizer is None:
-        optimizer = optax.adam(learning_rate=1e-2)
+    optimizer = optax.adam(learning_rate=1e-2)
     
     optimal_params, losses = fit(initial_params, optimizer)
     
-    # TODO return optimal circuit
+    optimal_classifier = classifier_fn(optimal_params)
     
-    return optimal_circuit, losses
+    return optimal_classifier, losses
 
 
 # TODO load data
@@ -95,6 +95,5 @@ y_reshape = jax.nn.one_hot(y % 2, 2).astype(jnp.float32).reshape(2000, 2)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y_one_hot, test_size=0.33, random_state=42)
 
-
-circuit_weights, losses = run_training(X_train, y_train, None)
+circuit_weights, losses = run_training(X_train, y_train, frqi, weight_layer)
 
