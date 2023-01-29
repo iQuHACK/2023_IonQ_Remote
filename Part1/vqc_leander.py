@@ -75,6 +75,7 @@ def loss(image, label, parameters):
 def cost_function(iterator, iterator_val, parameters):
     global BEST_LOSS
     global BEST_PARAMS
+    global BEST_VALIDATION
 
     def f(iterator):
         cost = []
@@ -95,7 +96,8 @@ def cost_function(iterator, iterator_val, parameters):
         BEST_VALIDATION = val
         BEST_PARAMS = parameters
         np.save(open('params.npy', 'wb'), BEST_PARAMS)
-
+    
+    print(f'LOSS: {res} VAL: {val}')
     return res  
 
 
@@ -165,7 +167,6 @@ with open('../data/images.npy', 'rb') as f:
     images = np.load(f)
 with open('../data/labels.npy', 'rb') as f:
     labels = np.load(f)*1
-
 
 indexes = np.arange(len(images))
 np.random.shuffle(indexes)
