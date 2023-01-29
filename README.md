@@ -20,6 +20,7 @@ git checkout <team_name>
 7. You are now ready to begin hacking! Work with your team to complete the challenges.
 
 For other questions or additional help using qBraid, see [Lab User Guide](https://qbraid-qbraid.readthedocs-hosted.com/en/latest/lab/overview.html), or reach out on [Discord](https://discord.gg/gwBebaBZZX).
+<<<<<<< HEAD
 
 ### qBraid Auto Grader Submission Process To Leaderboard:
 
@@ -32,3 +33,5 @@ Once you have completed any of the tasks and have added the team name, task # an
 - Enter `rickyyoung@qbraid.com` and share the file. If it shares successfully, the Ricky will periodically run the autograder and the leaderboard will be updated accordingly.
 
 - Then submit the remote project submission form that will show up on the iQuHACK website during the last 8 hours of hacking. The form will ask for a link to your repository and your team members (all of whom have to be remote iQuHACK participants to maintain elligibility).
+=======
+>>>>>>> 020a64c8ea4511bff179e592a820395925cff4d3
