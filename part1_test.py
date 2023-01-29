@@ -169,3 +169,4 @@ def run_part1(image):
 
 # # score for part1
 # print(f * (0.999 ** gatecount))
+test()
