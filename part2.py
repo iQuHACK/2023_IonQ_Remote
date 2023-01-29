@@ -91,12 +91,25 @@ class ClassicalNet(nn.Module):
 
 class QuantumFunctions(torch.autograd.Function):
     @staticmethod
-    def forward():
-        pass
+    def forward(ctx, circuit: qiskit.QuantumCircuit, x: torch.Tensor) -> torch.Tensor:
+        ctx.quantum_circuit = circuit
+        sim = ctx.quantum_circuit.simulate(x)
+        y = torch.tensor([sim])
+        ctx.save_for_backward(x, y)
+        return x
 
     @staticmethod
-    def backward():
-        pass
+    def backward(ctx, grad_output: torch.Tensor) -> Union[torch.Tensor, None]:
+        x, y = ctx.saved_tensors
+        x = x.detach().numpy()
+        
+        gradients = []
+        for i in range(len(x)):
+            gradient = ctx.quantum_circuit.simulate(x[i])
+            gradients.append(gradient)
+        gradients = np.array(gradients).T
+        return torch.tensor([gradients]), None
+        
 
 
 class QuantumNet(nn.Module):
