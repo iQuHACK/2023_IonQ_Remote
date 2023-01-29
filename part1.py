@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[6]:
 
+teamname="Feynman's Fashion Rescue"
+task="part 2"
 
 import qiskit
 from qiskit import quantum_info
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt
 import math
 
 # Utility functions (given to us)
+
 
 def simulate(circuit: qiskit.QuantumCircuit) -> dict:
     """Simulate the circuit, give the state vector as the result."""
