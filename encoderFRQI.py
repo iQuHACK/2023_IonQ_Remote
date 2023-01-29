@@ -18,7 +18,7 @@ def encode(image):
     qc = QuantumCircuit(qbits)
     
     #prepare the state
-    for i in qbits: 
+    for i in range(qbits-1): 
         qc.h(i)
     qc.barrier()
     
