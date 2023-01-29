@@ -1,5 +1,5 @@
 team_name = "missing_cats"
-team_members = ["Jatin Khanna", "", ""]
+team_members = ["Jatin Khanna", "Madhuria Rudra", "Raindrops69"]
 
 
 
