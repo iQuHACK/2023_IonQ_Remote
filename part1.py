@@ -36,6 +36,7 @@ def decode(hist):
     return double(img)
 
 def encode(data):
+    data = np.array(data)
     data = data * 255 / data.max()
     data = data.astype(int)
     data = pooling(data)
