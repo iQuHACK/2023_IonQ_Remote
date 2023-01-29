@@ -11,8 +11,10 @@
 * Loe-web
 
 # Write-up
-
-TODO:
+TODO: 
+For the first part, we tried using FRQI and NEQR (as described [here](https://qiskit.org/textbook/ch-applications/image-processing-frqi-neqr.html)) for image encoding. 
+At the moment these are considered state-of-the-art quantum image encoding methods. However, we quickly noticed that although the encoding was producing good results, it was extremely inefficient (encoding a single image took 2-4 minutes). 
+Hence, we decided to try Amplitude encoding instead (as described [here](https://qiskit.org/textbook/ch-applications/quantum-edge-detection.html)).
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
