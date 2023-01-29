@@ -52,7 +52,7 @@ def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
     counter = Counter([len(gate[1]) for gate in circuit.data])
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
-    for i in range(2,20):
+    for i in range(3,20): # only 1- and 2-qubit gates
         assert counter[i]==0
         
     return counter
@@ -121,6 +121,8 @@ def test():
 #      YOUR CODE HERE      #
 ############################
 import math
+from scipy.ndimage import zoom
+
 # Image properties
 SIZE = 4 # Image width
 NB_PX_IMG = SIZE ** 2
@@ -217,6 +219,10 @@ def encode(image):
             circuit.x(j)
 
     circuit.measure_all()
+    
+    from qiskit.transpiler.passes import RemoveBarriers
+    circuit = RemoveBarriers()(circuit)
+    
     return circuit
 
 def decode(counts: dict) -> np.ndarray:
@@ -230,6 +236,7 @@ def decode(counts: dict) -> np.ndarray:
         cos_str = "0" + bin_str[::-1]
         sin_str = "1" + bin_str[::-1]
 
+        theta = 0
         if cos_str in histogram:
             prob_cos = histogram[cos_str]
             theta = math.acos(np.clip(2**N * math.sqrt(prob_cos), 0, 1))
@@ -246,7 +253,8 @@ def decode(counts: dict) -> np.ndarray:
         img[i] = theta_to_pixel_value(theta)
 
     img = img[:NB_PX_IMG]
-    return img.reshape(SIZE, SIZE)
+    img = img.reshape(SIZE, SIZE)
+    return zoom(img, 7, order=0)
 
 def run_part1(image):
     #encode image into a circuit
