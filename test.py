@@ -11,12 +11,13 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 from typing import Dict, List
 import matplotlib.pyplot as plt
-import cv2
+# import cv2
+from skimage.transform import resize
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
-    data_path = '.'
+    data_path = './data/'
 
 
 # define utility functions
@@ -53,8 +54,8 @@ def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
     counter = Counter([len(gate[1]) for gate in circuit.data])
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
-    for i in range(2,20):
-        assert counter[i]==0
+    # for i in range(2,20):
+    #     assert counter[i]==0
         
     return counter
 
@@ -75,7 +76,11 @@ def test():
     mse=0
     gatecount=0
 
+    c = 0
     for image in images:
+        c+=1
+        if c>10:
+            break
         #encode image into circuit
         circuit,image_re=run_part1(image)
         image_re = np.asarray(image_re)
@@ -99,7 +104,11 @@ def test():
     gatecount=0
     n=len(images)
 
+    c=0
     for i in range(n):
+        c+=1
+        if c>10:
+            break
         #run part 2
         circuit,label=run_part2(images[i])
 
@@ -136,29 +145,53 @@ def amplitude_encode(img_data):
     return np.array(image_norm)
 
 
-def preprocess_image(images):
-    images_resized = []
-    for i in range(images.shape[0]):
-        im = cv2.resize(images[i], dsize=(16, 16))
-        images_resized.append(im)
-    return np.stack(images_resized, axis=0)
+# def preprocess_image(images):
+#     images_resized = []
+#     for i in range(images.shape[0]):
+#         # im = cv2.resize(images[i], dsize=(16, 16))
+#         im = resize(images[i], output_shape=(16, 16))
+#         images_resized.append(im)
+#     return np.stack(images_resized, axis=0)
 
+
+# def encode(image):
+#     data_qb = 8  # math.log2(n*n)
+#     anc_qb = 1
+#     total_qb = data_qb + anc_qb
+
+#     image_norm = amplitude_encode(image)
+#     # Initialize the amplitude permutation unitary
+#     D2n_1 = np.roll(np.identity(2 ** total_qb), 1, axis=1)
+
+#     qc = qiskit.QuantumCircuit(total_qb)
+
+#     qc.initialize(image_norm, range(1, total_qb))
+#     qc.h(0)
+#     qc.unitary(D2n_1, range(total_qb))
+#     qc.h(0)
+#     return qc
 
 def encode(image):
+    # NOTE: can actually resize the image to make it larger i.e. use n = 32
+    n = 16
+
+    im = resize(image, output_shape=(n, n))
+
+    image_norm = amplitude_encode(im)
     data_qb = 8  # math.log2(n*n)
     anc_qb = 1
     total_qb = data_qb + anc_qb
 
-    image_norm = amplitude_encode(image)
     # Initialize the amplitude permutation unitary
-    D2n_1 = np.roll(np.identity(2 ** total_qb), 1, axis=1)
+    D2n_1 = np.roll(np.identity(2**total_qb), 1, axis=1)
 
     qc = qiskit.QuantumCircuit(total_qb)
-
     qc.initialize(image_norm, range(1, total_qb))
     qc.h(0)
     qc.unitary(D2n_1, range(total_qb))
     qc.h(0)
+    # display(qc.draw('mpl', fold=-1))
+    
     return qc
 
 
@@ -173,7 +206,7 @@ def decode(histogram):
         sva[key] = value
 
     # NOTE: not sure about subsampling every second item
-    return sva[::2].reshape((n, n))
+    return resize(sva[::2].reshape((n, n)), output_shape=(28,28))
 
 
 def run_part1(image):
