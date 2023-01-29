@@ -1,6 +1,18 @@
-# 2023_planning_ionq
-IonQ's repository for iQuHACK 2023 (private planning)
+# 2023 iQuHack IonQ Remote Challenge
 
+# Team "TheUntitledTeam"
+
+# Members 
+
+* agercas
+* carleseb
+* Gopal-Dahale
+* ichirokira
+* Loe-web
+
+# Write-up
+
+TODO:
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
