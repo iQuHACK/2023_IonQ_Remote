@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 
 # Image properties
-SIZE = 4 #28//4  # 28 # Image width
+SIZE = 28 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -29,7 +29,7 @@ NB_PX = 2 ** (2 * N)
 def load_images(path: str) -> np.ndarray:
     images = np.load(path)
     images = images / max(images.flatten()) * 255
-    return images[:, ::8, ::8]
+    return images
 
 
 def pixel_value_to_theta(pixel: float) -> float:
@@ -69,7 +69,7 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
     switches = [bin(0)[2:].zfill(NB_QUBITS - 1)] + [
         bin(i ^ (i - 1))[2:].zfill(NB_QUBITS - 1) for i in range(1, NB_PX)
     ]
-    print(switches)
+
     # TODO remove switches which is not used anymore
 
     # Apply the rotation gates
@@ -80,11 +80,10 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
         # do not do zero rotation
         if theta != 0:
             switch = np.binary_repr(i, NB_QUBITS - 1)
-            print(switch, prev_switch)
+
             # Apply x gate to the i-th qubit if the i-th bit of the switch is 1
             for j in range(NB_QUBITS - 1):
                 if switch[j] != prev_switch[j]:
-                    print(j, NB_QUBITS, NB_QUBITS - 1 - j + 1)
                     circuit.x(j)
                 # if switch[j] == "1":
                 #     circuit.x(j - 1)
@@ -113,13 +112,8 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
     for j in range(NB_QUBITS - 1):
         if prev_switch[j] != "1":
             circuit.x(j)
-    #print(count_gates(circuit))
-    from qiskit.transpiler.passes import RemoveBarriers
 
     circuit.measure_all()
-    circuit = RemoveBarriers()(circuit)
-
-    print(circuit)
     return circuit
 
 def recursive_ry(circuit, theta, mask):
