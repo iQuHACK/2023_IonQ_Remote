@@ -91,34 +91,45 @@ class ClassicalNet(nn.Module):
 
 class QuantumFunctions(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, circuit: qiskit.QuantumCircuit, x: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, circuit: qiskit.QuantumCircuit, x: torch.Tensor, shift) -> torch.Tensor:
         ctx.quantum_circuit = circuit
+        ctx.shift = shift
+
         sim = ctx.quantum_circuit.simulate(x)
         y = torch.tensor([sim])
-        ctx.save_for_backward(x, y)
+        ctx.save_for_backward(x)
+        
         return x
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> Union[torch.Tensor, None]:
-        x, y = ctx.saved_tensors
+        x = ctx.saved_tensors
         x = x.detach().numpy()
         
+        # Gradient evaluation with finite differences
+        shift_right = x + ctx.shift * np.ones(x.shape)
+        shift_left = x - ctx.shift * np.ones(x.shape)
+
         gradients = []
         for i in range(len(x)):
-            gradient = ctx.quantum_circuit.simulate(x[i])
+            y_right = ctx.quantum_circuit.simulate(shift_right[i])
+            y_left = ctx.quantum_circuit.simulate(shift_left[i])
+
+            gradient = torch.Tensor([(y_right - y_left) / (2 * ctx.shift)])
             gradients.append(gradient)
         gradients = np.array(gradients).T
-        return torch.tensor([gradients]), None
+        return grad_output.float() * torch.tensor([gradients]).float(), None
         
 
 
 class QuantumNet(nn.Module):
-    def __init__(self, quantum_circuit: QuantumCircuit) -> None:
+    def __init__(self, quantum_circuit: QuantumCircuit, shift) -> None:
         super(QuantumNet, self).__init__()
         self.quantum_circuit = quantum_circuit
+        self.shift = shift
 
     def forward(self, x):
-        return QuantumFunctions.apply(x, self.quantum_circuit)
+        return QuantumFunctions.apply(x, self.quantum_circuit, self.shift)
 
 
 class HybridClassifier(nn.Module):
