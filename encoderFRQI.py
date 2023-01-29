@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit
 from qiskit import transpile, assemble
 from qiskit.tools.jupyter import *
 from qiskit.visualization import plot_histogram
-from math import pi,log2
+from math import pi, log2, ceil
 
 qbits=9
 
