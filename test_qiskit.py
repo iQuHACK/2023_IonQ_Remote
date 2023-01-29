@@ -1,3 +1,6 @@
+teamname = 'InstaQu'
+task = 'part 1'
+
 import qiskit
 from qiskit import quantum_info
 from qiskit.execute_function import execute
@@ -63,13 +66,13 @@ def image_mse(image1,image2):
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     return mean_squared_error(255*image1,255*image2)
 
-def test():
-    #load the actual hackthon data (fashion-mnist)
-    images=np.load(data_path+'/images.npy')
-    labels=np.load(data_path+'/labels.npy')
-    
-    #test part 1
+################################
+#load the actual hackthon data (fashion-mnist)
+images=np.load(data_path+'/images.npy')
+labels=np.load(data_path+'/labels.npy')
+################################
 
+def test():
     n=len(images)
     mse=0
     gatecount=0
@@ -114,24 +117,74 @@ def test():
 
     score_part2=score*(0.999**gatecount)
     
-    print(score_part1, ",", score_part2, ",", data_path, sep="")
+    print(score_part1, ",", score_part2 ",", data_path, sep="")
 
 
 ############################
 #      YOUR CODE HERE      #
 ############################
+
+def iterate_regions(image):
+    '''
+    Takes in the 2d array of pixel activations and returns the generate non-overlapping 2x2 image regions to pool over.
+    (uses stride = 2)
+    '''
+    h, w = image.shape
+    h_n = h // 2
+    w_n = w // 2
+
+    for i in range(h_n):
+        for j in range(w_n):
+            im_region = image[(i * 2):(i * 2 + 2), (j * 2):(j * 2 + 2)]
+            yield im_region, i, j
+            
+
+def max_pool(in_):
+    '''
+    Performs a forward pass of the maxpool layer using the given input image and returns a 2d numpy array with dimensions 
+    (h / 2, w / 2). This is possible on using a maxpool kernel with filter size = 2 and stride = 2. This will be implemented 
+    with the help of iterate_regions function.
+    '''
+    last_input = in_
+
+    h, w = in_.shape
+    output = np.zeros((h // 2, w // 2))
+
+    for im_region, i, j in iterate_regions(in_):
+        output[i, j] = np.amax(im_region, axis=(0, 1))
+
+    return output
+
+
 def encode(image):
-    q = qiskit.QuantumRegister(3)
+    image = max_pool(image) # dimension reduction
+    q = qiskit.QuantumRegister(len(image))
     circuit = qiskit.QuantumCircuit(q)
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
+    
+    for y in range(len(image)):
+        for x in range(len(image[y])):
+            if image[y][x] != 0:
+                circuit.rx(np.pi,y)
+                
     return circuit
 
+
+temp = dict()
+for i in range(len(images)):
+    image_temp = images[i]
+    circuit_temp = encode(image_temp)
+    histogram_temp = simulate(circuit_temp)
+    temp[list(histogram_temp.keys())[0]] = image_temp
+
+def image_dict(number):
+    return temp[number]
+
+
 def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
+    for i in range(int(2**14)):
+        if i in histogram.keys():
+            image = image_dict(i)
+            break
     return image
 
 def run_part1(image):
@@ -148,7 +201,7 @@ def run_part1(image):
 
 def run_part2(image):
     # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
+    classifier = q_classifier(image)
     
     #encode image into circuit
     circuit=encode(image)
