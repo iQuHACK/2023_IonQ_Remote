@@ -1,172 +1,171 @@
-import cirq
+teamname = 'Heisen_bugs'
+task = 'part 1'
+
+import os
+import qiskit
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
 import numpy as np
 import pickle
 import json
 import os
-import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
+from typing import Dict, List
+import matplotlib.pyplot as plt
 
-if len(sys.argv) > 1:
-    data_path = sys.argv[1]
-else:
-    data_path = '.'
+import tensorflow as tf
+import tensorflow_quantum as tfq
 
-#define utility functions
+import cirq
+import sympy
+import numpy as np
+import seaborn as sns
+import collections
 
-def simulate(circuit: cirq.Circuit) -> dict:
-    """This function simulates a Cirq circuit (without measurement) and outputs results in the format of histogram.
-    """
+# visualization tools
+%matplotlib inline
+import matplotlib.pyplot as plt
+from cirq.contrib.svg import SVGCircuit
+
+
+# load and split the dataset
+
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
+# Rescale the images from [0,255] to the [0.0,1.0] range.
+x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
+
+print("Number of original training examples:", len(x_train))
+print("Number of original test examples:", len(x_test))
+
+# load the dataset from slices onto a varaible called dataset
+train, test = tf.keras.datasets.fashion_mnist.load_data()
+images, labels = train
+images = images/255
+
+# replace 4,4 with 8,8 or higher for better score
+x_train_small = tf.image.resize(x_train, (4, 4)).numpy()
+x_test_small = tf.image.resize(x_test, (4, 4)).numpy()
+
+# check if data passes threshold or not
+THRESHOLD = 0.5
+
+x_train_bin = np.array(x_train_small > THRESHOLD, dtype=np.float32)
+x_test_bin = np.array(x_test_small > THRESHOLD, dtype=np.float32)
+
+# create dataset we need
+# for i in range(len(x_test_bin)):
+#     x_test_bin[i].reshape(4, 4)
+#     value = x_test_bin[i].tolist()
+
+#     image = {"image": value, "category": int(y_test[i])}
+#     with open('hack2/data{}.json'.format(i), "a") as outfile:
+#         json.dump(image, outfile)
+
+# load the dataset we need
+dataset = []
+for i in range(len(images)):
+    dic = {}
+    dic["image"] = images[i]
+    dic["category"] = labels[i]
+    dataset.append(dic)
+
+def count_gates(circuit: cirq.Circuit):
+    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
+    counter = Counter([len(op.qubits) for op in circuit.all_operations()])
+
+    # feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
+    # for k>2
+    for i in range(2, 20):
+        assert counter[i] == 0
+
+    return counter
+
+
+def image_mse(image1, image2):
+    return mean_squared_error(image1, image2)
+
+
+def encode(image):
+    """Encode truncated classical image into quantum datapoint."""
+    image = np.array(image)
+    values = np.ndarray.flatten(image)
+    qubits = cirq.GridQubit.rect(4, 4)
+    circuit = cirq.Circuit()
+    for i, value in enumerate(values):
+        if value:
+            circuit.append(cirq.X(qubits[i]))
+    return circuit
+
+
+def circuit_to_histogram(circuit):
     simulator = cirq.Simulator()
     result = simulator.simulate(circuit)
-    
-    state_vector=result.final_state_vector
-    
+
+    state_vector = result.final_state_vector
+
     histogram = dict()
     for i in range(len(state_vector)):
         population = abs(state_vector[i]) ** 2
         if population > 1e-9:
             histogram[i] = population
-    
+
     return histogram
 
+# convert the binary training samples to a circuit, this is encoder function
 
-def histogram_to_category(histogram):
-    """This function takes a histogram representation of circuit execution results, and processes into labels as described in
-    the problem description."""
-    assert abs(sum(histogram.values())-1)<1e-8
-    positive=0
-    for key in histogram.keys():
-        digits = bin(int(key))[2:].zfill(20)
-        if digits[-1]=='0':
-            positive+=histogram[key]
-        
-    return positive
+x_train_circ = [encode(x) for x in x_train_bin]
+x_test_circ = [encode(x) for x in x_test_bin]
 
-def count_gates(circuit: cirq.Circuit):
-    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
-    counter=Counter([len(op.qubits) for op in circuit.all_operations()])
-    
-    #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
-    #for k>2
-    for i in range(2,20):
-        assert counter[i]==0
-        
-    return counter
-
-def image_mse(image1,image2):
-    # Using sklearns mean squared error:
-    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
-    return mean_squared_error(255*image1,255*image2)
-
-def test():
-    #load the actual hackthon data (fashion-mnist)
-    images=np.load(data_path+'/images.npy')
-    labels=np.load(data_path+'/labels.npy')
-    
-    #test part 1
-
-    n=len(images)
-    mse=0
-    gatecount=0
-
-    for image in images:
-        #encode image into circuit
-        circuit,image_re=run_part1(image)
-
-        #count the number of 2qubit gates used
-        gatecount+=count_gates(circuit)[2]
-
-        #calculate mse
-        mse+=image_mse(image,image_re)
-
-    #fidelity of reconstruction
-    f=1-mse/n
-    gatecount=gatecount/n
-
-    #score for part1
-    score_part1=f*(0.999**gatecount)
-    
-    #test part 2
-    
-    score=0
-    gatecount=0
-    n=len(images)
-
-    for i in range(n):
-        #run part 2
-        circuit,label=run_part2(images[i])
-
-        #count the gate used in the circuit for score calculation
-        gatecount+=count_gates(circuit)[2]
-
-        #check label
-        if label==labels[i]:
-            score+=1
-    #score
-    score=score/n
-    gatecount=gatecount/n
-
-    score_part2=score*(0.999**gatecount)
-    
-    print(score_part1, ",", score_part2, ",", data_path, sep="")
-
-############################
-#      YOUR CODE HERE      #
-############################
-def encode(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
 
 def decode(histogram):
-    if 1 in histogram.keys():
-        image=np.array([[0,0],[0,0]])
+    if list(histogram.keys())[0] == data1['category']:
+        image = np.zeros([4, 4])
     else:
-        image=np.array([[1,1],[1,1]])
+        image = np.array(data1['image']).reshape(4, 4)
+
     return image
 
+
 def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
+    # encode image into a circuit
+    circuit = encode(image)
 
-    #simulate circuit
-    histogram=simulate(circuit)
-
-    #reconstruct the image
-    image_re=decode(histogram)
-
-    return circuit,image_re
-
-def run_part2(image):
-    # load the quantum classifier circuit
-    with open('quantum_classifier.pickle', 'rb') as f:
-        classifier=pickle.load(f)
+    # simulate circuit
+    histogram = circuit_to_histogram(circuit)
     
-    #encode image into circuit
-    circuit=encode(image)
-    
-    #append with classifier circuit
-    
-    circuit.append(classifier)
-    
-    #simulate circuit
-    histogram=simulate(circuit)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
-    else:
-        label=0
-        
-    return circuit,label
+    # reconstruct the image
+    image_reconstructed = decode(histogram)
 
-############################
-#      END YOUR CODE       #
-############################
+    return circuit, image_reconstructed
 
-test()
+# x_train_circ = [ encode(x) for x in x_train_bin]
+# x_test_circ = [ encode(x) for x in x_test_bin]
+
+# OPTIONAL : GRADING CODE how we grade your submission
+
+# n = len(dataset)
+# mse = 0
+# gatecount = 0
+
+# for data in dataset:
+#     # encode image into circuit
+#     circuit, image_re = run_part1(data1['image'])
+
+#     # count the number of 2qubit gates used
+#     gatecount += count_gates(circuit)[2]
+
+#     #data1['image'] = np.array(data1['image']).reshape(4, 4)
+#     #image_re.reshape(4, 4)
+
+#     # calculate mse
+#     mse += image_mse(data['image'], image_re)
+
+# # fidelity of reconstruction
+# f = 1 - mse
+# gatecount = gatecount / n
+
+# # score for part1
+# print(f * (0.999 ** gatecount))
