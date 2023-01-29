@@ -105,7 +105,7 @@ def decode(dic: dict, n_pix: int):
             if key_1 not in dic:
                 decoded[j][i] = 0
 
-            if key_0 not in dic:
+            elif key_0 not in dic:
                 decoded[j][i] = 1
 
             else:
