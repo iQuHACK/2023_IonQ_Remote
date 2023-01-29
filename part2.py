@@ -12,9 +12,8 @@ from qiskit.visualization import plot_histogram
 from qiskit import Aer, transpile
 from qiskit import BasicAer, execute
 
-with open('part2.pickle') as f:
-    classifier = pickle.load(f)
-
+f = open("part2.pickle","rb")
+classifier = pickle.load(f)
 
 def label_probability(results):
     """Converts a dict of bitstrings and their counts,
@@ -25,8 +24,8 @@ def label_probability(results):
         hamming_weight = sum(int(k) for k in list(bitstring))
         label = (hamming_weight+1) % 2
         probabilities[label] += counts / shots
-    #print('probabilities calculated')
-    return probabilities
+    label = max(probabilities, key.get)
+    return label
 
 def run_part2(image):
     input_circuit = pt1.encoder(image)
