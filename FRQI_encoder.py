@@ -1,15 +1,14 @@
 ## FRQI image processing 28/01
-
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, transpile, assemble
+from qiskit import QuantumCircuit, QuantumRegister, Aer, transpile, assemble
 from random import randint
-from math import pi
+from math import pi, atan, sqrt
 
 n_scale = 3  # Use 2**n_scale colours
-n_pixels = 2  # Square image with height = length = 2**n_pixels
+n_pixels = 3  # Square image with height = length = 2**n_pixels
 
-#test_image = [[randint(0, 2**n_scale - 1) / 2**n_scale * pi / 2 for i in range(n_pixels + 1)] for j in range(n_pixels + 1)]
-test_image = [[0 for i in range(2**n_pixels)] for j in range(2**n_pixels)]
-
+test_image = [[randint(0, 2**n_scale - 1) / 2**n_scale * pi / 2 
+               for i in range(2**n_pixels)] for j in range(2**n_pixels)]
+test_image[0][0] = 0
 print(test_image)
 
 ##
@@ -51,7 +50,7 @@ def encode(image, n_pix: int):
             # Obtain coordinates in binary, as well as intensity, registered as theta
             x_bin_coord = bin(j)[2:].zfill(n_pixels)
             y_bin_coord = bin(i)[2:].zfill(n_pixels)
-            theta = image[i][j]
+            theta = image[-(i+1)][-(j+1)]
 
             # Apply X gates
             x_gate_location(qc_image, x_bin_coord, y_bin_coord, x_idx, y_idx)
@@ -76,8 +75,31 @@ def encode(image, n_pix: int):
 
     return counts
 
-##
-print(encode(test_image, n_pixels))
 
 ##
+def decode(dic, n_pix: int):
+    # Placeholder
+    decoded = [[0 for _ in range(2**n_pix)] for _ in range(2**n_pix)]
 
+    for i in range(2**n_pix):  # loop over x coordinates
+        for j in range(2**n_pix):  # loop over y coordinates
+            x_str = bin(i)[2:].zfill(n_pix)
+            y_str = bin(j)[2:].zfill(n_pix)
+            key_0 = '0' + y_str + x_str
+            key_1 = '1' + y_str + x_str
+
+            if key_1 not in dic:
+                decoded[j][i] = 0
+
+            elif key_0 not in dic:
+                decoded[j][i] = 1
+
+            else:
+                tan2_theta = dic[key_1] / dic[key_0]
+                decoded[j][i] = atan(sqrt(tan2_theta))
+
+    return decoded
+
+
+##
+print(decode(encode(test_image, n_pixels), n_pixels))
