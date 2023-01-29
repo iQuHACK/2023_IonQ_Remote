@@ -248,18 +248,34 @@ def run_part1(image):
 
 def run_part2(image):
     # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
+     # a. Use encode(image) to convert the image into a quantum circuit
+    qr = qiskit.QuantumRegister(8) # 8 qubits to represent the 8x8 image
+    circuit = qiskit.QuantumCircuit(qr)
+    # Add gates to the circuit to implement the classifier logic
+    circuit.h(qr[0])
+    circuit.cx(qr[0], qr[1])
+    circuit.cx(qr[1], qr[2])
+
+    # Save the circuit to a .pickle file
+    with open("quantum_classifier.pickle", "wb") as file:
+        pickle.dump(circuit, file)
+
+
     
-    #encode image into circuit
-    circuit=encode(image)
+    en_image = encode(image)
     
-    #append with classifier circuit
-    nq1 = circuit.width()
-    nq2 = classifier.width()
-    nq = max(nq1, nq2)
-    qc = qiskit.QuantumCircuit(nq)
-    qc.append(circuit.to_instruction(), list(range(nq1)))
-    qc.append(classifier.to_instruction(), list(range(nq2)))
+    # b. Append the circuit with the classifier circuit loaded from the .pickle file
+    with open("quantum_classifier.pickle", "rb") as file:
+        classifier_circuit = pickle.load(file)
+        
+    #circuit = encoded_image + classifier_circuit
+    circuit = en_image.compose(classifier_circuit)
+    
+    # c. Simulate the circuit (encoded_image+classifier_circuit) and get a histogram
+    backend = qiskit.BasicAer.get_backend("qasm_simulator")
+    result = qiskit.execute(circuit, backend, shots=1024).result()
+    ob1 = assemble(circuit)
+    res = backend.run(ob1).result()
     
     #simulate circuit
     histogram=simulate(qc)
