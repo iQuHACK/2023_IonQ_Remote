@@ -67,7 +67,17 @@ class QuantumCircuit:
 
 
 class ClassicalNet(nn.Module):
-    pass
+    def __init__(self):
+        super(ClassicalNet, self).__init__()
+        # TODO: Replace with better architecture
+        self.conv1 = nn.Conv2d(1, 6, kernel_size=5)
+        self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
+        self.dropout = nn.Dropout2d()
+        self.fc1 = nn.Linear(256, 64)
+        self.fc2 = nn.Linear(64, 1)
+
+    def forward(self, x):
+        pass
 
 
 class QuantumNet(nn.Module):
