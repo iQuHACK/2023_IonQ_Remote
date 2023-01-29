@@ -1,23 +1,23 @@
-"""
-The following code is a quantum image compression and decompression code that utilizes qiskit library.
-It consists of several functions:
-
-- simulate: takes a QuantumCircuit and returns a histogram of the statevector simulation result
-- basis_states_probs: takes a histogram and returns the probabilities of all basis states
-- reduze_size: reduces the size of the image
-- encoder: encoding the image into a QuantumCircuit
-- apply_decoder: applies the decoder on the reduced image
-- decoder: decoding the histogram and return the image
-"""
-import numpy as np
-from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, Aer, transpile
-from sklearn.metrics import mean_squared_error
-from scipy.signal import convolve2d
+import qiskit
 from qiskit import quantum_info
 from qiskit.execute_function import execute
 from qiskit import BasicAer
-import qiskit
+import numpy as np
+import pickle
+import json
+import os
+import sys
+from collections import Counter
+from sklearn.metrics import mean_squared_error
+from typing import Dict, List
+import matplotlib.pyplot as plt
 
+if len(sys.argv) > 1:
+    data_path = sys.argv[1]
+else:
+    data_path = '.'
+
+#define utility functions
 
 def simulate(circuit: qiskit.QuantumCircuit) -> dict:
     """Simulate the circuit, give the state vector as the result."""
@@ -33,6 +33,98 @@ def simulate(circuit: qiskit.QuantumCircuit) -> dict:
             histogram[i] = population
     
     return histogram
+
+
+def histogram_to_category(histogram):
+    """This function takes a histogram representation of circuit execution results, and processes into labels as described in
+    the problem description."""
+    assert abs(sum(histogram.values())-1)<1e-4
+    positive=0
+    for key in histogram.keys():
+        digits = bin(int(key))[2:].zfill(20)
+        if digits[-1]=='0':
+            positive+=histogram[key]
+        
+    return positive
+
+def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
+    """Returns the number of gate operations with each number of qubits."""
+    counter = Counter([len(gate[1]) for gate in circuit.data])
+    #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
+    #for k>2
+    for i in range(2,20):
+        assert counter[i]==0
+        
+    return counter
+
+
+def image_mse(image1,image2):
+    # Using sklearns mean squared error:
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
+    return mean_squared_error(255*image1,255*image2)
+
+def test():
+    #load the actual hackthon data (fashion-mnist)
+    images=np.load(data_path+'/images.npy')
+    labels=np.load(data_path+'/labels.npy')
+    
+    #test part 1
+
+    n=len(images)
+    mse=0
+    gatecount=0
+
+    for image in images:
+        #encode image into circuit
+        circuit,image_re=run_part1(image)
+        image_re = np.asarray(image_re)
+
+        #count the number of 2qubit gates used
+        gatecount+=count_gates(circuit)[2]
+
+        #calculate mse
+        mse+=image_mse(image,image_re)
+
+    #fidelity of reconstruction
+    f=1-mse/n
+    gatecount=gatecount/n
+
+    #score for part1
+    score_part1=f*(0.999**gatecount)
+    
+    #test part 2
+    
+    score=0
+    gatecount=0
+    n=len(images)
+
+    for i in range(n):
+        #run part 2
+        circuit,label=run_part2(images[i])
+
+        #count the gate used in the circuit for score calculation
+        gatecount+=count_gates(circuit)[2]
+
+        #check label
+        if label==labels[i]:
+            score+=1
+    #score
+    score=score/n
+    gatecount=gatecount/n
+
+    score_part2=score*(0.999**gatecount)
+    
+    print(score_part1, ",", score_part2, ",", data_path, sep="")
+
+
+############################
+#      YOUR CODE HERE      #
+############################
+
+
+from scipy.signal import convolve2d
+from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit
+
 
 def basis_states_probs(counts):
     n = N_qubits
@@ -155,3 +247,37 @@ def run_part1(image):
     histogram = simulate(circuit)
     image = decode(histogram)
     return circuit, image
+
+
+def run_part2(image):
+    # load the quantum classifier circuit
+    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
+    
+    #encode image into circuit
+    circuit=encode(image)
+    
+    #append with classifier circuit
+    qc = QuantumCircuit(16, 16)
+    qc = qc.compose(circuit)
+    qc = qc.compose(classifier)
+    
+    #simulate circuit
+    histogram=simulate(qc)
+        
+    #convert histogram to category
+    label=histogram_to_category(histogram)
+    
+    #thresholding the label, any way you want
+    print(label)
+    if label>0.4:
+        label=1
+    else:
+        label=0
+        
+    return circuit,label
+
+############################
+#      END YOUR CODE       #
+############################
+
+test()

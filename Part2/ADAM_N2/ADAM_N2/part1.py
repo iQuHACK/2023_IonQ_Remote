@@ -94,7 +94,7 @@ def reduze_size(image):
     return new_image
 
 
-def encode(image):
+def encoder(image):
     """Encoding the image into a QuantumCircuit."""
 
     image = image/np.max(image) if np.max(image) > 0 else image
@@ -122,7 +122,7 @@ def apply_decoder(kernel, image_resized):
             new_image[kx*x: kx*(x +1), ky*y: ky*(y+1)] = kernel * image_resized[x, y]
     return new_image
 
-def decode(histogram):
+def decoder(histogram):
     """Decodes the histogram into an image."""
     probs = basis_states_probs(histogram)
     q_probs = []
@@ -151,7 +151,7 @@ def decode(histogram):
     
 
 def run_part1(image):
-    circuit = encode(image)
+    circuit = encoder(image)
     histogram = simulate(circuit)
-    image = decode(histogram)
+    image = decoder(histogram)
     return circuit, image

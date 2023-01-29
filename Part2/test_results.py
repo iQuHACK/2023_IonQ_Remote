@@ -70,11 +70,7 @@ def loss(image, label, parameters):
     predict = histogram_to_category(histogram)
     return (label-predict)**2, predict
 
-def cost_function(iterator, iterator_val, parameters):
-    global BEST_LOSS
-    global BEST_PARAMS
-    global BEST_VALIDATION
-    #print(parameters[:10])
+def cost_function(iterator, parameters):
     def f(iterator):
         cost = []
         N = len(iterator)
@@ -88,16 +84,7 @@ def cost_function(iterator, iterator_val, parameters):
     res = np.mean(cost[:, 0])
     roc = roc_auc_score(cost[:, 1], cost[:, 2])
 
-    cost_val = parallelize('', f, iterator_val)
-    val = np.mean(cost_val[:, 0])
-    roc_val = roc_auc_score(cost_val[:, 1], cost_val[:, 2])
-
-    if val < BEST_VALIDATION:
-        BEST_VALIDATION = val
-        BEST_PARAMS = parameters
-        np.save(open('params.npy', 'wb'), BEST_PARAMS)
-    
-    print(f'LOSS: {res} VAL: {val} ROC: {roc} ROCVAL: {roc_val}')
+    print(f'LOSS: {res} ROC: {roc}')
     return res  
 
 
@@ -147,23 +134,9 @@ def parallelize(process_name: str, f, iterator, *args):
     return np.array(result)
 
 
-def store_intermediate_result(evaluation, parameter, cost, 
-                              stepsize, accept):
-    evaluations.append(evaluation)
-    parameters.append(parameter)
-    costs.append(cost)
-
-parameters = []
-costs = []
-evaluations = []
-
-BEST_PARAMS = None
-BEST_LOSS = 1e3
-BEST_VALIDATION = 1e3
-
-n_process = 25
+n_process = 100
 n_qubits = 16
-n_layers = 2
+
 
 with open('../../data/images.npy', 'rb') as f:
     images = np.load(f)
@@ -174,24 +147,34 @@ indexes = np.arange(len(images))
 np.random.seed = 41
 np.random.shuffle(indexes)
 
-n_train = int(0.8 * len(images))
-n_val = len(images) - n_train
-
 
 images = images[indexes]
 labels = labels[indexes]
 
-iterator_train = list(zip(images[:n_train], labels[:n_train]))
-iterator_val = list(zip(images[n_train:], labels[n_train:]))
+iterator_test = list(zip(images, labels))
 
-optimizer = COBYLA(maxiter=50)
+print('COBYLA N1')
+n_layers = 1
+with open('../COBYLA_N1/params.npy','rb') as f:
+    parameters = np.load(f)
+cost_function(iterator_test, parameters)
 
-p = np.random.random(3*n_qubits*n_layers)*2*np.pi
+print('COBYLA N2')
+n_layers = 2
+with open('../COBYLA_N2/params.npy','rb') as f:
+    parameters = np.load(f)
+cost_function(iterator_test, parameters)
 
-objective_function = lambda param: cost_function(iterator_train, iterator_val, param)
-                                            
-ret = optimizer.optimize(num_vars=3*n_qubits*n_layers, objective_function=objective_function, initial_point=p)
+print('ADAM N1')
+n_layers = 1
+with open('../ADAM_N1/params.npy','rb') as f:
+    parameters = np.load(f)
+cost_function(iterator_test, parameters)
 
-print("OPTIMIZATION COMPLETED! RESULT ---> {}".format(ret))
+print('ADAM N2')
+n_layers = 2
+with open('../ADAM_N2/params.npy','rb') as f:
+    parameters = np.load(f)
+cost_function(iterator_test, parameters)
 
 

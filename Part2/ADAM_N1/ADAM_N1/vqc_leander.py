@@ -163,7 +163,7 @@ BEST_VALIDATION = 1e3
 
 n_process = 25
 n_qubits = 16
-n_layers = 2
+n_layers = 1
 
 with open('../../data/images.npy', 'rb') as f:
     images = np.load(f)
@@ -184,7 +184,7 @@ labels = labels[indexes]
 iterator_train = list(zip(images[:n_train], labels[:n_train]))
 iterator_val = list(zip(images[n_train:], labels[n_train:]))
 
-optimizer = COBYLA(maxiter=50)
+optimizer = ADAM(maxiter=50, lr=5e-3)
 
 p = np.random.random(3*n_qubits*n_layers)*2*np.pi
 
