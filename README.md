@@ -2,7 +2,7 @@
 IonQ's repository for iQuHACK 2023 (private planning)
 
 
-Note :- Please check the test_qiskit.py file as our final submission
+Note :- Please check the test_qiskit.py file as our final submission ; Task1.py and Task2.ipynb are also included
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
 1. If you're working on qBraid, first fork this repository and click the above `Launch on qBraid` button. It will take you to your qBraid Lab with the repository cloned.
