@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit
 from qiskit import transpile, assemble
 from qiskit.tools.jupyter import *
 from qiskit.visualization import plot_histogram
-from math import pi,log2
+from math import pi, log2, ceil
 
 qbits=9
 
@@ -18,7 +18,7 @@ def encode(image):
     qc = QuantumCircuit(qbits)
     
     #prepare the state
-    for i in qbits: 
+    for i in range(qbits-1): 
         qc.h(i)
     qc.barrier()
     
@@ -27,6 +27,6 @@ def encode(image):
             qc.cry(0.5*pi*image[x][y],np.arange(qbits-1),qbits-1)
             qc.barrier()
     
-    qc.transpile()
+    qc=transpile(qc)
     
     return qc
