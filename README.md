@@ -1,6 +1,7 @@
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
 
+Team name :- QChar
 
 Note :- Please check the test_qiskit.py file as our final submission ; Task1.py and Task2.ipynb are also included
 ## Working on qBraid
