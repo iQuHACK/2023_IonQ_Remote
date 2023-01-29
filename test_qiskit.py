@@ -120,60 +120,27 @@ def test():
 ############################
 #      YOUR CODE HERE      #
 ############################
-def encode(image):
-    q = qiskit.QuantumRegister(3)
-    circuit = qiskit.QuantumCircuit(q)
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
-    return circuit
 
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
-    return image
+# Commented out IPython magic to ensure Python compatibility.
+import numpy as np
+# %matplotlib inline
+import matplotlib.pyplot as plt
+from sklearn.decomposition import TruncatedSVD
+from sklearn.manifold import TSNE
 
-def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
+# The images are somehow 28 by 27 while the Kaggle says it is 28x28. 
+#     I don't know why they lost a row or column.
+width = 28
+length = 27
+data_path = "./dataset/"
 
-    #simulate circuit
-    histogram=simulate(circuit)
+# Loading train data
+train_data = np.load("/content/drive/MyDrive/2023_IonQ_Remote/data/images.npy")
 
-    #reconstruct the image
-    image_re=decode(histogram)
-
-    return circuit,image_re
-
-def run_part2(image):
-    # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
-    
-    #encode image into circuit
-    circuit=encode(image)
-    
-    #append with classifier circuit
-    nq1 = circuit.width()
-    nq2 = classifier.width()
-    nq = max(nq1, nq2)
-    qc = qiskit.QuantumCircuit(nq)
-    qc.append(circuit.to_instruction(), list(range(nq1)))
-    qc.append(classifier.to_instruction(), list(range(nq2)))
-    
-    #simulate circuit
-    histogram=simulate(qc)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
-    else:
-        label=0
-        
-    return circuit,label
+# Showing an image
+image = train_data[1, 1:].reshape((width, length))
+plt.imshow(image)
+plt.show()
 
 ############################
 #      END YOUR CODE       #
