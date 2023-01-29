@@ -106,7 +106,7 @@ def decode(histogram,circuit):
             if j == "h":
                 # remade_list.append(11)
                 remade_list.append(int('11',2)/1000)
-    whole_matrix = split_list(remade_list, len(remade_list) // 28)
+    whole_matrix = split_list(remade_list, len(remade_list) // (image.shape[1]))
     whole_matrix = np.array(whole_matrix)
     plt.imshow(whole_matrix)
 
