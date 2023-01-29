@@ -124,7 +124,7 @@ import math
 from scipy.ndimage import zoom
 
 # Image properties
-SIZE = 4 # Image width
+SIZE = 7 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -177,7 +177,7 @@ def recursive_ry(circuit, theta, mask):
 
 def encode(image):
     circuit = qiskit.QuantumCircuit(NB_QUBITS)
-    image = image[::7, ::7]
+    image = image[::4, ::4]
     # Get the theta values for each pixel
     image = image.flatten()
     thetas = [pixel_value_to_theta(pixel) for pixel in image]
@@ -230,9 +230,8 @@ def decode(counts: dict) -> np.ndarray:
     img = np.zeros(NB_PX)  # we have a square image
 
     for i in range(NB_PX):
-        print(i)
         bin_str: str = np.binary_repr(i, width=NB_QUBITS - 1)
-        print(bin_str)
+
         cos_str = "0" + bin_str[::-1]
         sin_str = "1" + bin_str[::-1]
 
@@ -254,7 +253,7 @@ def decode(counts: dict) -> np.ndarray:
 
     img = img[:NB_PX_IMG]
     img = img.reshape(SIZE, SIZE)
-    return zoom(img, 7, order=0)
+    return zoom(img, 4, order=0)
 
 def run_part1(image):
     #encode image into a circuit
