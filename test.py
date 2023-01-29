@@ -11,14 +11,15 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 from typing import Dict, List
 import matplotlib.pyplot as plt
+import cv2
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
     data_path = '.'
 
-#define utility functions
 
+# define utility functions
 def simulate(circuit: qiskit.QuantumCircuit) -> dict:
     """Simulate the circuit, give the state vector as the result."""
     backend = BasicAer.get_backend('statevector_simulator')
@@ -120,60 +121,103 @@ def test():
 ############################
 #      YOUR CODE HERE      #
 ############################
+# we add preprocess data for our model
+def amplitude_encode(img_data):
+    # Calculate the RMS value
+    rms = np.sqrt(np.sum(np.sum(img_data ** 2, axis=1)))
+
+    # Create normalized image
+    image_norm = []
+    for arr in img_data:
+        for ele in arr:
+            image_norm.append(ele / rms)
+
+    # Return the normalized image as a numpy array
+    return np.array(image_norm)
+
+
+def preprocess_image(images):
+    images_resized = []
+    for i in range(images.shape[0]):
+        im = cv2.resize(images[i], dsize=(16, 16))
+        images_resized.append(im)
+    return np.stack(images_resized, axis=0)
+
+
 def encode(image):
-    q = qiskit.QuantumRegister(3)
-    circuit = qiskit.QuantumCircuit(q)
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
-    return circuit
+    data_qb = 8  # math.log2(n*n)
+    anc_qb = 1
+    total_qb = data_qb + anc_qb
+
+    image_norm = amplitude_encode(image)
+    # Initialize the amplitude permutation unitary
+    D2n_1 = np.roll(np.identity(2 ** total_qb), 1, axis=1)
+
+    qc = qiskit.QuantumCircuit(total_qb)
+
+    qc.initialize(image_norm, range(1, total_qb))
+    qc.h(0)
+    qc.unitary(D2n_1, range(total_qb))
+    qc.h(0)
+    return qc
+
 
 def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
-    return image
+    n = 16
+    data_qb = 8  # math.log2(n*n)
+    anc_qb = 1
+    total_qb = data_qb + anc_qb
+
+    sva = np.zeros(2 ** total_qb)
+    for key, value in histogram.items():
+        sva[key] = value
+
+    # NOTE: not sure about subsampling every second item
+    return sva[::2].reshape((n, n))
+
 
 def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
+    # encode image into a circuit
+    circuit = encode(image)
 
-    #simulate circuit
-    histogram=simulate(circuit)
+    # simulate circuit
+    histogram = simulate(circuit)
 
-    #reconstruct the image
-    image_re=decode(histogram)
+    # reconstruct the image
+    image_re = decode(histogram)
 
-    return circuit,image_re
+    return circuit, image_re
+
 
 def run_part2(image):
     # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
-    
-    #encode image into circuit
-    circuit=encode(image)
-    
-    #append with classifier circuit
+    classifier = qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
+
+    # encode image into circuit
+    circuit = encode(image)
+
+    # append with classifier circuit
     nq1 = circuit.width()
     nq2 = classifier.width()
     nq = max(nq1, nq2)
     qc = qiskit.QuantumCircuit(nq)
     qc.append(circuit.to_instruction(), list(range(nq1)))
     qc.append(classifier.to_instruction(), list(range(nq2)))
-    
-    #simulate circuit
-    histogram=simulate(qc)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
+
+    # simulate circuit
+    histogram = simulate(qc)
+
+    # convert histogram to category
+    label = histogram_to_category(histogram)
+
+    # thresholding the label, any way you want
+    if label > 0.45:
+        label = 1
     else:
-        label=0
-        
-    return circuit,label
+        label = 0
+
+    return circuit, label
+
 
 ############################
 #      END YOUR CODE       #
