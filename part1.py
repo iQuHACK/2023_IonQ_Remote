@@ -1,14 +1,6 @@
-import cirq
+import math
 from qiskit import QuantumCircuit
 import numpy as np
-
-
-def encode_cirq(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
-
 
 def decode(hist):
     def bin_rep(x, n=8):
@@ -18,81 +10,160 @@ def decode(hist):
         elif len(t) > n:
             t = t[len(t)-n:]
         return t
-    dp = {}
-    for i in range(32):
-        for j in range(32):
-            dp[bin_rep(i,5) + bin_rep(j,5)] = (i,j) 
-    fdp = {}
-    for k , v in dp.items():
-        for i in range(64):
-            fdp[bin_rep(i, 6) + k] = v
-    img = np.zeros((28,28))
-    for i in range(28):
-        for j in range(28):
-            t = [k for k , v in fdp.items() if v == (i,j)]
-            p = -1
-            res = '000000000000'
-            for st in t:
-                if st in hist:
-                    if hist[st] > p:
-                        p = hist[st]
-                        res = st
+    
+    n = 16
+    img = np.zeros((n,n))
+    
+    for i in range(n):
+        for j in range(n):
+            st =  bin_rep(i,4) + bin_rep(j,4) 
+            st = st[::-1]
+            st0 = '0' + st
+            st1 = '1' + st
+            if st0 in hist and st1 in hist:
+                c0, c1 = hist[st0], hist[st1]
+                t = c0+c1
+                c0,c1 = c0/t, c1/t
+                img[n-i-1][j] = math.acos(c0-c1)
+            else:
+                img[n-i-1][j] = 0
             
-            img[i][j] = int(res[:6],2)
-    img = img*255/img.max()
+    img = img * 2 * 240 / np.pi
+    img = img[:-2,2:]
+    for i in range(14):
+        img[i] = np.flip(img[i])
+
     return img
 
-
-def encode_qiskit(data):
-
-    def bin_rep(x):
-        t = "{0:b}".format(x)
-        if len(t) < 8:
-            t = '0'*(8-len(t)) + t
-        return t
-        data = data * 255 / data.max()
+def encode(data):
+    data = data * 255 / data.max()
     data = data.astype(int)
-    # M, N = data.shape
-    # K = 2
-    # L = 2
-    # MK = M // K
-    # NL = N // L
-    # data = data[:MK*K, :NL*L].reshape(MK, K, NL, L).max(axis=(1, 3))
-    data = data.flatten()
+    data = pooling(data)
+    data = data.astype(int)
+    n = 8
+    q = 1
+    ac = 7
+    num_qubits = n+q+ac #8 qubits for pixels and 6 qubits for data 
+    qc_image = QuantumCircuit(num_qubits, n+q) 
 
-    qc = QuantumCircuit(16)
-    # assume in 
-    # I : 0 - 5
-    # X 6 - 10
-    # Y 11 - 15
-    
-    # Step 1 load blank image
-    for i in range(6,16):
-        qc.h(i)
-    
-    # Step 2:
-    final_output = [] 
-    n = 10
-    q = 6
-    num_qubits = n+q #8 qubits for pixels and 6 qubits for data 
-    qc_image = QuantumCircuit(num_qubits) 
+    for i in range(n):
+        qc_image.h(i)
 
-    # Create the pixel position qubits, and place them in superposition. 
-    # qc_pos = QuantumCircuit(n) 
-    for i in range(q, num_qubits):
-        qc_image.h(i) 
-
-    for idx in range(q): 
-        qc_image.i(idx) 
 
     # Add the CNOT gates 
-    for i , px in enumerate(data): 
-        qc_image.x(num_qubits-1) 
-        for idx, px_value in enumerate(bin_rep(px, q)): 
-            if px_value=='1': 
-                qc_image.ccx(num_qubits-1,num_qubits-2, idx) 
-        qc_image.x(num_qubits-1) 
-        qc_image.barrier() 
+    for idx , px in np.ndenumerate(data):
+        if px > 15: 
+            qc_image = apply_x(qc_image,*idx)
+            qc_image = apply_tofolli(qc_image,n,n+q,n, np.pi * px / (2*240))
+            qc_image = apply_x(qc_image,*idx)
+
+    # #run circuit in backend and get the state vector 
+    # backend = BasicAer.get_backend('statevector_simulator')
+    # result = execute(qc_image, backend=backend).result() 
+    # output = result.get_statevector(qc_image) 
+
+    for i in range(n+q):
+        qc_image.measure(i,i)
 
     return qc_image
+
+
+def bin_rep(x, n=8):
+    t = "{0:b}".format(x)
+    if len(t) < n:
+        t = '0'*(n-len(t)) + t
+    elif len(t) > n:
+        t = t[len(t)-n:]
+    return t
+
+def tofolli(qc: QuantumCircuit,x,y,t):
+    qc.barrier()
+    qc.h(t)
+    qc.cx(y,t)
+    qc.tdg(t)
+    qc.cx(x,t)
+    qc.t(t)
+    qc.cx(y,t)
+    qc.tdg(t)
+    qc.cx(x,t)
+    qc.t(y)
+    qc.t(t)
+    qc.cx(x,y)
+    qc.h(t)
+    qc.t(x)
+    qc.tdg(y)
+    qc.cx(x,y)
+    qc.barrier()
+    return qc
+
+def apply_tofolli(qc, n, anc, target, theta):
+    anc_st = anc
+    qc.barrier()
+    for i in range(n):
+        if i == 0:
+            qc = tofolli(qc,i,i+1,anc)
+        elif i == 1:
+            ...
+        else:
+            qc = tofolli(qc,i, anc_st, anc_st+1)
+            anc_st += 1
+
+    qc.cry(theta, anc_st, target)
+    anc_st -= 1
+
+    for i in reversed(range(n)):
+        if i == 0:
+            qc = tofolli(qc,i,i+1,anc)
+        elif i == 1:
+            pass
+        else:
+            qc = tofolli(qc,i, anc_st, anc_st+1)
+            anc_st -= 1
     
+    qc.barrier()
+
+    return qc
+
+def apply_x(qc, x,y):
+    x = bin_rep(x,4)
+    y = bin_rep(y,4)
+    t = x+y
+    qc.barrier()
+    for i, v in enumerate(t):
+        if v == '1':
+            qc.x(i)
+    qc.barrier()
+    return qc
+
+def pooling(mat,ksize=(2,2),pad=False):
+    m, n = mat.shape[:2]
+    ky,kx=ksize
+
+    _ceil=lambda x,y: int(np.ceil(x/float(y)))
+
+    if pad:
+        ny=_ceil(m,ky)
+        nx=_ceil(n,kx)
+        size=(ny*ky, nx*kx)+mat.shape[2:]
+        mat_pad=np.full(size,np.nan)
+        mat_pad[:m,:n,...]=mat
+    else:
+        ny=m//ky
+        nx=n//kx
+        mat_pad=mat[:ny*ky, :nx*kx, ...]
+
+    new_shape=(ny,ky,nx,kx)+mat.shape[2:]
+
+    result=np.nanmean(mat_pad.reshape(new_shape),axis=(1,3))
+
+    return result
+
+def double(img):
+    new_img = np.zeros((28,28))
+    x,y = 0,0
+    for (i,j),v in np.ndenumerate(img):
+        new_img[2*i, 2*j] = v
+        new_img[2*i+1, 2*j] = v
+        new_img[2*i, 2*j+1] = v
+        new_img[2*i+1, 2*j+1] = v
+    return new_img
