@@ -80,6 +80,6 @@ def run_training(X, y, circuit:'Circuit', simulator:'Simulator', optimizer=None)
     if optimizer is None:
         optimizer = optax.adam(learning_rate=1e-2)
     
-    params, losses = fit(initial_params, optimizer, circuit)
+    params, losses = fit(initial_params, optimizer)
     
     return params, losses
