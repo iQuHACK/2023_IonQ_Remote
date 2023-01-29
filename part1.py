@@ -114,8 +114,10 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
         if prev_switch[j] != "1":
             circuit.x(j)
     #print(count_gates(circuit))
+    from qiskit.transpiler.passes import RemoveBarriers
 
     circuit.measure_all()
+    circuit = RemoveBarriers()(circuit)
 
     print(circuit)
     return circuit
