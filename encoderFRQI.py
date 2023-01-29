@@ -27,6 +27,6 @@ def encode(image):
             qc.cry(0.5*pi*image[x][y],np.arange(qbits-1),qbits-1)
             qc.barrier()
     
-    qc.transpile()
+    qc=transpile(qc)
     
     return qc
