@@ -54,14 +54,12 @@ def decompress(freqs, scale, size):
     return reconstructed_image
 
 
-def encode(image, eps=1e-6):
+def encoder(image, eps=1e-6):
     if image.shape[0] != image.shape[1]:
         raise ValueError('Image must be square.')
-    if np.min(image) < 0:
-        raise ValueError('Image cannot have negative entries.')
 
     image_side = image.shape[0]
-    n = image_side.bit_length() - 1
+    n = int(np.ceil(np.log2(image_side)))
 
     q = qiskit.QuantumRegister(2*n+1)
     ct = qiskit.QuantumCircuit(q)
@@ -84,15 +82,16 @@ def encode(image, eps=1e-6):
 
             if abs(theta) > eps:
                 rotation = qiskit.circuit.library.RYGate(2.*theta)
+                key = (aux_i + aux_j)[::-1]
                 rotation = rotation.control(num_ctrl_qubits=2*n,
-                                            ctrl_state=(aux_i + aux_j))
+                                            ctrl_state=key)
                 ct.append(rotation, q)
     ct.ry(2 * np.pi/4, q[-1])
 
     return ct
 
 
-def decode(histogram, image_side):
+def decoder(histogram, image_side):
     # This function considers that the histogram is actually the probabilities
     # computed via the wavefunction.
     index_reg_qubits = int(np.ceil(np.log2(image_side)))
@@ -110,24 +109,28 @@ def decode(histogram, image_side):
             c_2 = arr_2[::-1].dot(2**np.arange(arr_2.size)[::-1])
             data[c_2, c_1] = (
                 4/np.pi) * np.arccos(np.sqrt(histogram.get(key, 0.) * n_pixels)) - 1
-            #print(key, arr_1, arr_2, c_1, c_2)
 
     return data
 
 
-def encoder(image):
-    circuit = encode(image, eps=5e-2)
-    return circuit
+def encode(image, return_scale=False):
+    freqs, scale = compress(image, 4)
+    circuit = encoder(freqs, eps=5e-2)
+    circuit = qiskit.transpile(circuit, basis_gates=[
+                               'u', 'cx'], optimization_level=3)
+    if return_scale:
+        return scale, circuit
+    else:
+        return circuit
 
 
-def decoder(histogram, freq_shape, scale, data_shape):
-    freqs_re = decode(histogram, freq_shape)
+def decode(histogram, scale, data_shape):
+    freqs_re = decoder(histogram, 4)
     image_re = decompress(freqs_re, scale, data_shape)
     return image_re
 
 
 def run_part1(image):
-    freqs, scale = compress(image, 2)
-    circuit = encode(freqs)
+    scale, circuit = encode(image, return_scale=True)
     histogram = simulate(circuit)
-    return decoder(histogram, freqs.shape[0], scale, image.shape[0])
+    return circuit, decode(histogram, scale, image.shape[0])

@@ -42,7 +42,7 @@ def run_part2(image):
         'submission_classifier.qasm')
 
     # encode image into circuit
-    circuit = submission_part1.bin_arrayencode(image)
+    circuit = submission_part1.encode(image)
 
     # append with classifier circuit
     nq1 = circuit.width()
@@ -58,7 +58,6 @@ def run_part2(image):
     # convert histogram to category
     label = histogram_to_category(histogram)
 
-    # thresholding the label, any way you want
     if label > 0.5:
         label = False
     else:
