@@ -8,6 +8,8 @@ from qiskit import BasicAer
 from collections import Counter
 import qiskit
 from typing import Dict, List
+from multiprocessing import Process, Manager
+from functools import partial
 
 
 def vqc(n_qubits, n_layers, params):
@@ -25,8 +27,6 @@ def vqc(n_qubits, n_layers, params):
         for i in range(n_qubits-1):
             qc.cnot(i,i+1)
     return qc
-
-
 
 
 n_qubits = 16
@@ -62,29 +62,87 @@ def histogram_to_category(histogram):
 
 def loss(image, label, parameters):
     circuit=encoder(image)
-    
-    #append with classifier circuit
+
     qc = QuantumCircuit(16,16)
     qc = qc.compose(circuit)
     qc = qc.compose(vqc(n_qubits, n_layers, parameters))
-    
     #simulate circuit
     histogram=simulate(qc)
-        
     #convert histogram to category
     predict = histogram_to_category(histogram)
-    #print("Prediction: ", predict)
-    #print("Label: ", label)
     return (label-predict)**2
 
-def cost_function(images, labels, parameters):
-    cost = []
-    labels = labels*1
-    N = len(images)
-    for i in range(N):
-        print(f'{i}/{N}', end='\r')
-        cost.append(loss(images[i], labels[i], parameters))
-    return np.mean(cost)
+def cost_function(iterator, iterator_val, parameters):
+    global BEST_LOSS
+    global BEST_PARAMS
+
+    def f(iterator):
+        cost = []
+        N = len(iterator)
+        for i in range(N):
+            image, label = iterator[i]
+            cost.append(loss(image, label, parameters))
+        return cost
+    
+    cost = parallelize('', f, iterator)
+    res = np.mean(cost)
+
+    val = np.mean(parallelize('', f, iterator_val))
+
+
+    if res < BEST_LOSS and val < BEST_VALIDATION:
+        BEST_LOSS = res
+        BEST_VALIDATION = val
+        BEST_PARAMS = parameters
+        np.save(open('params.npy', 'wb'), BEST_PARAMS)
+
+    return res  
+
+
+def parallelize(process_name: str, f, iterator, *args):
+    process = []
+    iterator = list(iterator)
+    N = len(iterator)
+
+    def parallel_f(result, per, iterator, *args) -> None:
+        '''
+        Auxiliar function to help the parallelization
+
+        Parameters:
+            result : array_like
+                It is a shared memory list where each result is stored.
+            per : list[int]
+                It is a shared memory list that contais the number of elements solved.
+            iterator : array_like
+                The function f is applied to elements in the iterator array.
+        '''
+        value = f(iterator, *args)              # The function f is applied to the iterator
+        if value is not None:
+            # The function may not return anything
+            result += f(iterator, *args)        # Store the output into result array
+        per[0] += len(iterator)                 # The counter is actualized
+        print(per[0]/N, end='\r')
+    
+    result = Manager().list([])             # Shared Memory list to store the result
+    per = Manager().list([0])               # Shared Memory to countability the progress
+    f_ = partial(parallel_f,  result, per)  # Modified function used to create processes
+
+    n = N//n_process                                                   # Number or processes
+    for i_start in range(n_process):
+        # Division of the iterator array into n smaller arrays
+        j_end = n*(i_start+1) if i_start < n_process-1\
+            else n*(i_start+1) + N % n_process
+        i_start = i_start*n
+        p = Process(target=f_, args=(iterator[i_start: j_end], *args)) 
+        #print(f'Create Proces: {i_start}')     # Process creation
+        p.start()                                                           # Initialize the process
+        process.append(p)
+
+    while len(process) > 0:
+        p = process.pop(0)
+        p.join()
+
+    return np.array(result)
 
 
 def store_intermediate_result(evaluation, parameter, cost, 
@@ -97,17 +155,39 @@ parameters = []
 costs = []
 evaluations = []
 
+BEST_PARAMS = None
+BEST_LOSS = 1e3
+BEST_VALIDATION = 1e3
+
+n_process = 8
+
 with open('../data/images.npy', 'rb') as f:
     images = np.load(f)
 with open('../data/labels.npy', 'rb') as f:
-    labels = np.load(f)
+    labels = np.load(f)*1
+
+
+indexes = np.arange(len(images))
+np.random.shuffle(indexes)
+
+n_train = int(0.95 * len(images))
+n_val = len(images) - n_train
+
+
+images = images[indexes]
+labels = labels[indexes]
+
+iterator_train = list(zip(images[:n_train], labels[:n_train]))
+iterator_val = list(zip(images[n_train:], labels[n_train:]))
 
 optimizer = SPSA(maxiter=50,callback=store_intermediate_result)
 
 p = np.random.random(3*n_qubits*n_layers)
 
-objective_function = lambda p: cost_function(images[0:50],labels[0:50],p)
+objective_function = lambda p: cost_function(iterator_train, iterator_val, p)
                                             
 ret = optimizer.optimize(num_vars=3*n_qubits*n_layers, objective_function=objective_function, initial_point=p)
 
 print("OPTIMIZATION COMPLETED! RESULT ---> {}".format(ret))
+
+
