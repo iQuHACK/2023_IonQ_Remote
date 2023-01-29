@@ -13,9 +13,6 @@ from qiskit import BasicAer
 from typing import Dict, List, Union
 import matplotlib.pyplot as plt
 
-
-from typing
-
 #define utility functions
 
 def simulate(circuit: Union[cirq.Circuit, qiskit.QuantumCircuit], backend_='qiskit') -> dict:
