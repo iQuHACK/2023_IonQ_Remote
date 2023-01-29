@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 
 # Image properties
-SIZE = 8  # 28 # Image width
+SIZE = 7 #28//4  # 28 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -29,7 +29,7 @@ NB_PX = 2 ** (2 * N)
 def load_images(path: str) -> np.ndarray:
     images = np.load(path)
     images = images / max(images.flatten()) * 255
-    return images
+    return images[:, ::4, ::4]
 
 
 def pixel_value_to_theta(pixel: float) -> float:
@@ -118,7 +118,7 @@ def simulator(circuit: qiskit.QuantumCircuit) -> dict:
     # Simulate the circuit
     aer_sim = Aer.get_backend("aer_simulator")
     t_qc = transpile(circuit, aer_sim)
-    qobj = assemble(t_qc, shots=16384)
+    qobj = assemble(t_qc, shots=1024)
 
     result = aer_sim.run(qobj).result()
     return result.get_counts(circuit)
