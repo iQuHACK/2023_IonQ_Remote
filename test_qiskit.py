@@ -141,7 +141,47 @@ train_data = np.load("/content/drive/MyDrive/2023_IonQ_Remote/data/images.npy")
 image = train_data[1, 1:].reshape((width, length))
 plt.imshow(image)
 plt.show()
+#Extracting features and labels from the dataset and truncating the dataset to 10,000 datapoints
+train_data_features = train_data[:10000, 1:]
+train_data_labels = train_data[:10000, :1].reshape(-1,)
+train_data_features = train_data_features.reshape(train_data_features.shape[0], -1)
 
+
+# Using SVD to reduce dimensions to 10
+tsvd = TruncatedSVD(n_components=2)
+X_SVD = tsvd.fit_transform(train_data_features)
+
+# Use t-SNE technique to reduce dimensions to 2
+np.random.seed(0)
+tsne = TSNE(n_components=2)
+train_data_features_reduced = tsne.fit_transform(X_SVD)
+
+zero_datapoints_array = [] #an array of the data points containing value 0
+one_datapoints_array = []# an array of the data points containing value 1
+
+# Iterate over the first 2000 samples of train_data_labels
+for i in range(0,2000):
+    if train_data_labels[i] == 0:                   # extracting  0 is label for T-shirt
+        zero_datapoints_array.append(train_data_features_reduced[i])
+    elif train_data_labels[i] == 1:                   # extracting ones
+        one_datapoints_array.append(train_data_features_reduced[i])
+
+
+
+zero_datapoints_array = np.array(zero_datapoints_array)
+one_datapoints_array = np.array(one_datapoints_array)
+
+print(len(zero_datapoints_array))
+print(len(one_datapoints_array))
+def normalize(arr, max_val, n):
+    a = np.divide(arr, max_val)
+    return a + n
+
+zero_datapoints_normalized = normalize(zero_datapoints_array, 100, 1)
+one_datapoints_normalized = normalize(one_datapoints_array, 100, 1)
+
+print(len(zero_datapoints_normalized))
+print(len(one_datapoints_normalized))
 ############################
 #      END YOUR CODE       #
 ############################
