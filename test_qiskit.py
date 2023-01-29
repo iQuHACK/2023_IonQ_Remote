@@ -120,181 +120,188 @@ def test():
 ############################
 #      YOUR CODE HERE      #
 ############################
+def encode(image):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.manifold import TSNE
 
-# Commented out IPython magic to ensure Python compatibility.
-import numpy as np
-# %matplotlib inline
-import matplotlib.pyplot as plt
-from sklearn.decomposition import TruncatedSVD
-from sklearn.manifold import TSNE
+    # The images are somehow 28 by 27 while the Kaggle says it is 28x28.
+    #     I don't know why they lost a row or column.
+    width = 28
+    length = 27
+    data_path = "./dataset/"
 
-# The images are somehow 28 by 27 while the Kaggle says it is 28x28. 
-#     I don't know why they lost a row or column.
-width = 28
-length = 27
-data_path = "./dataset/"
+    # Loading train data
+    train_data = np.load("/content/drive/MyDrive/2023_IonQ_Remote/data/images.npy")
 
-# Loading train data
-train_data = np.load("/content/drive/MyDrive/2023_IonQ_Remote/data/images.npy")
+    # Showing an image
+    image = train_data[1, 1:].reshape((width, length))
+    plt.imshow(image)
+    plt.show()
 
-# Showing an image
-image = train_data[1, 1:].reshape((width, length))
-plt.imshow(image)
-plt.show()
-#Extracting features and labels from the dataset and truncating the dataset to 10,000 datapoints
-train_data_features = train_data[:10000, 1:]
-train_data_labels = train_data[:10000, :1].reshape(-1,)
-train_data_features = train_data_features.reshape(train_data_features.shape[0], -1)
-
-
-# Using SVD to reduce dimensions to 10
-tsvd = TruncatedSVD(n_components=2)
-X_SVD = tsvd.fit_transform(train_data_features)
-
-# Use t-SNE technique to reduce dimensions to 2
-np.random.seed(0)
-tsne = TSNE(n_components=2)
-train_data_features_reduced = tsne.fit_transform(X_SVD)
-
-zero_datapoints_array = [] #an array of the data points containing value 0
-one_datapoints_array = []# an array of the data points containing value 1
-
-# Iterate over the first 2000 samples of train_data_labels
-for i in range(0,2000):
-    if train_data_labels[i] == 0:                   # extracting  0 is label for T-shirt
-        zero_datapoints_array.append(train_data_features_reduced[i])
-    elif train_data_labels[i] == 1:                   # extracting ones
-        one_datapoints_array.append(train_data_features_reduced[i])
+    #Extracting features and labels from the dataset and truncating the dataset to 10,000 datapoints
+    train_data_features = train_data[:10000, 1:]
+    train_data_labels = train_data[:10000, :1].reshape(-1,)
+    train_data_features = train_data_features.reshape(train_data_features.shape[0], -1)
 
 
+    # Using SVD to reduce dimensions to 10
+    tsvd = TruncatedSVD(n_components=2)
+    X_SVD = tsvd.fit_transform(train_data_features)
 
-zero_datapoints_array = np.array(zero_datapoints_array)
-one_datapoints_array = np.array(one_datapoints_array)
+    # Use t-SNE technique to reduce dimensions to 2
+    np.random.seed(0)
+    tsne = TSNE(n_components=2)
+    train_data_features_reduced = tsne.fit_transform(X_SVD)
 
-print(len(zero_datapoints_array))
-print(len(one_datapoints_array))
-def normalize(arr, max_val, n):
-    a = np.divide(arr, max_val)
-    return a + n
+    zero_datapoints_array = [] #an array of the data points containing value 0
+    one_datapoints_array = []# an array of the data points containing value 1
 
-zero_datapoints_normalized = normalize(zero_datapoints_array, 100, 1)
-one_datapoints_normalized = normalize(one_datapoints_array, 100, 1)
-
-print(len(zero_datapoints_normalized))
-print(len(one_datapoints_normalized))
-
-#Now we have data in binary 
-#We have to encode this next
-
-#encode & decodehere
-import qiskit
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-
-# Define the quantum and classical registers
-q = QuantumRegister(16) # n is the number of qubits you want to use
-c = ClassicalRegister(16)
-
-# Create the quantum circuit
-qc = QuantumCircuit(q, c)
-
-# Iterate over each data point and apply rotations
-for i in range(len(train_data_features_reduced)):
-    for j in range(2):
-        qc.ry(train_data_features_reduced[i][j], q[j])
-
-# Measure the qubits and store the result in the classical register
-qc.measure(q, c)
-
-# Execute the circuit on a quantum backend
-backend = qiskit.Aer.get_backend('qasm_simulator')
-result = qiskit.execute(qc, backend, shots=1024).result()
-counts = result.get_counts()
-
-import matplotlib.pyplot as plt
-
-plt.bar(counts.keys(), counts.values(), color='g')
-plt.show()
-
-#part 2 cirq method 
-
-import cirq
-import numpy as np
-
-# Slice the arrays to only include the first num_samples of each class
-
-# Define the quantum circuit
-qnn = cirq.Circuit()
-qubits = cirq.LineQubit.range(8)
-
-# Iterate over each data point and apply rotations
-for i in range(len(one_datapoints_normalized)):
-    for j in range(10):
-        qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
-
-# Measure the qubits and store the result in a classical register
-qnn.append(cirq.measure(*qubits))
-
-# Execute the circuit on a quantum simulator
-simulator = cirq.Simulator()
-zero_result = simulator.run(qnn, repetitions=1024)
-
-# Define the quantum circuit
-qnn = cirq.Circuit()
-qubits = cirq.LineQubit.range(8)
-
-# Iterate over each data point and apply rotations
-for i in range(len(one_datapoints_normalized)):
-    for j in range(2):
-        qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
-
-# Measure the qubits and store the result in a classical register
-qnn.append(cirq.measure(*qubits))
-
-# Execute the circuit on a quantum simulator
-simulator = cirq.Simulator()
-one_result = simulator.run(qnn, repetitions=1024)
-
-qubits = cirq.LineQubit.range(16)
-circuit = cirq.Circuit()
-for i in range(len(zero_datapoints_normalized)):
-    for j in range(2):
-        circuit.append(cirq.ry(zero_datapoints_normalized[i][j]).on(qubits[j]))
-
-# Apply quantum gates
-circuit.append(cirq.CNOT(qubits[0], qubits[1]))
-circuit.append(cirq.CZ(qubits[0], qubits[2]))
-circuit.append(cirq.CNOT(qubits[1], qubits[3]))
-
-# Measure the qubits
-for i in range(16):
-    circuit.append(cirq.measure(qubits[i], key=str(i)))
+    # Iterate over the first 2000 samples of train_data_labels
+    for i in range(0,2000):
+        if train_data_labels[i] == 0:                   # extracting  0 is label for T-shirt
+            zero_datapoints_array.append(train_data_features_reduced[i])
+        elif train_data_labels[i] == 1:                   # extracting ones
+            one_datapoints_array.append(train_data_features_reduced[i])
 
 
-#shape
-print (zero_datapoints_normalized.shape)
-print (train_data_labels.shape)
 
-# Now you can use the zero_data and one_data arrays in your Q
-from sklearn.svm import SVC
-clf = SVC()
-train_data_labels_reshaped = train_data_labels.reshape(-1, 1)
-print(len(train_data_labels_reshaped))
+    zero_datapoints_array = np.array(zero_datapoints_array)
+    one_datapoints_array = np.array(one_datapoints_array)
 
-num_samples = min(len(zero_datapoints_normalized), len(train_data_labels))
-zero_datapoints_normalized = zero_datapoints_normalized[:num_samples]
-train_data_labels = train_data_labels[:num_samples]
+    def normalize(arr, max_val, n):
+        a = np.divide(arr, max_val)
+        return a + n
 
-import numpy as np
-# Convert continuous labels to 0s and 1s
-train_data_labels = np.where(train_data_labels > threshold, 1, 0)
-zero_datapoints_normalized = np.where(zero_datapoints_normalized > threshold, 1, 0)
+    zero_datapoints_normalized = normalize(zero_datapoints_array, 100, 1)
+    one_datapoints_normalized = normalize(one_datapoints_array, 100, 1)
 
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(zero_datapoints_normalized, train_data_labels, test_size=0.2, random_state=42)
 
-from sklearn.svm import OneClassSVM
-clf = OneClassSVM()
-clf.fit(X_train)
+def decode(histogram):
+    #encode & decodehere
+    import qiskit
+    from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+
+    # Define the quantum and classical registers
+    q = QuantumRegister(16) # n is the number of qubits you want to use
+    c = ClassicalRegister(16)
+
+    # Create the quantum circuit
+    qc = QuantumCircuit(q, c)
+
+    # Iterate over each data point and apply rotations
+    for i in range(len(train_data_features_reduced)):
+        for j in range(2):
+            qc.ry(train_data_features_reduced[i][j], q[j])
+
+    # Measure the qubits and store the result in the classical register
+    qc.measure(q, c)
+
+    # Execute the circuit on a quantum backend
+    backend = qiskit.Aer.get_backend('qasm_simulator')
+    result = qiskit.execute(qc, backend, shots=1024).result()
+    counts = result.get_counts()
+
+    import matplotlib.pyplot as plt
+
+    plt.bar(counts.keys(), counts.values(), color='g')
+    plt.show()
+
+def run_part1(image):
+    #encode image into a circuit
+    circuit=encode(image)
+
+    #simulate circuit
+    histogram=simulate(circuit)
+
+    #reconstruct the image
+    image_re=decode(histogram)
+
+    return circuit,image_re
+
+def run_part2(image):
+    #part 2 cirq method 
+
+    import cirq
+    import numpy as np
+
+    # Slice the arrays to only include the first num_samples of each class
+
+    # Define the quantum circuit
+    qnn = cirq.Circuit()
+    qubits = cirq.LineQubit.range(8)
+
+    # Iterate over each data point and apply rotations
+    for i in range(len(one_datapoints_normalized)):
+        for j in range(10):
+            qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
+
+    # Measure the qubits and store the result in a classical register
+    qnn.append(cirq.measure(*qubits))
+
+    # Execute the circuit on a quantum simulator
+    simulator = cirq.Simulator()
+    zero_result = simulator.run(qnn, repetitions=1024)
+
+    # Define the quantum circuit
+    qnn = cirq.Circuit()
+    qubits = cirq.LineQubit.range(8)
+
+    # Iterate over each data point and apply rotations
+    for i in range(len(one_datapoints_normalized)):
+        for j in range(2):
+            qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
+
+    # Measure the qubits and store the result in a classical register
+    qnn.append(cirq.measure(*qubits))
+
+    # Execute the circuit on a quantum simulator
+    simulator = cirq.Simulator()
+    one_result = simulator.run(qnn, repetitions=1024)
+
+    qubits = cirq.LineQubit.range(16)
+    circuit = cirq.Circuit()
+    for i in range(len(zero_datapoints_normalized)):
+        for j in range(2):
+            circuit.append(cirq.ry(zero_datapoints_normalized[i][j]).on(qubits[j]))
+
+    # Apply quantum gates
+    circuit.append(cirq.CNOT(qubits[0], qubits[1]))
+    circuit.append(cirq.CZ(qubits[0], qubits[2]))
+    circuit.append(cirq.CNOT(qubits[1], qubits[3]))
+
+    # Measure the qubits
+    for i in range(16):
+        circuit.append(cirq.measure(qubits[i], key=str(i)))
+
+
+    #shape
+    print (zero_datapoints_normalized.shape)
+    print (train_data_labels.shape)
+
+    # Now you can use the zero_data and one_data arrays in your Q
+    from sklearn.svm import SVC
+    clf = SVC()
+    train_data_labels_reshaped = train_data_labels.reshape(-1, 1)
+    print(len(train_data_labels_reshaped))
+
+    num_samples = min(len(zero_datapoints_normalized), len(train_data_labels))
+    zero_datapoints_normalized = zero_datapoints_normalized[:num_samples]
+    train_data_labels = train_data_labels[:num_samples]
+
+    threshold = 0.5
+    import numpy as np
+    # Convert continuous labels to 0s and 1s
+    train_data_labels = np.where(train_data_labels > threshold, 1, 0)
+    zero_datapoints_normalized = np.where(zero_datapoints_normalized > threshold, 1, 0)
+
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(zero_datapoints_normalized, train_data_labels, test_size=0.2, random_state=42)
+
+    from sklearn.svm import OneClassSVM
+    clf = OneClassSVM()
+    clf.fit(X_train)
 
 ############################
 #      END YOUR CODE       #
