@@ -14,6 +14,6 @@ def make_circuit(image, n=16):
     return(circuit)
 
 def encode(image):
-    image = resize(np.random.sample((28,28)), (16, 16))
+    image = resize(image, (16, 16))
     return(make_circuit(image))
     
