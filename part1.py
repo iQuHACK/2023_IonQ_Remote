@@ -33,7 +33,7 @@ def decode(hist):
     for i in range(14):
         img[i] = np.flip(img[i])
 
-    return img
+    return double(img)
 
 def encode(data):
     data = data * 255 / data.max()
@@ -77,7 +77,7 @@ def bin_rep(x, n=8):
     return t
 
 def tofolli(qc: QuantumCircuit,x,y,t):
-    qc.barrier()
+    # qc.barrier()
     qc.h(t)
     qc.cx(y,t)
     qc.tdg(t)
@@ -93,12 +93,12 @@ def tofolli(qc: QuantumCircuit,x,y,t):
     qc.t(x)
     qc.tdg(y)
     qc.cx(x,y)
-    qc.barrier()
+    # qc.barrier()
     return qc
 
 def apply_tofolli(qc, n, anc, target, theta):
     anc_st = anc
-    qc.barrier()
+    # qc.barrier()
     for i in range(n):
         if i == 0:
             qc = tofolli(qc,i,i+1,anc)
@@ -120,7 +120,7 @@ def apply_tofolli(qc, n, anc, target, theta):
             qc = tofolli(qc,i, anc_st, anc_st+1)
             anc_st -= 1
     
-    qc.barrier()
+    # qc.barrier()
 
     return qc
 
@@ -128,11 +128,11 @@ def apply_x(qc, x,y):
     x = bin_rep(x,4)
     y = bin_rep(y,4)
     t = x+y
-    qc.barrier()
+    # qc.barrier()
     for i, v in enumerate(t):
         if v == '1':
             qc.x(i)
-    qc.barrier()
+    # qc.barrier()
     return qc
 
 def pooling(mat,ksize=(2,2),pad=False):
