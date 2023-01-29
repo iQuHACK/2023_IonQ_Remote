@@ -71,7 +71,12 @@ class ClassicalNet(nn.Module):
 
 
 class QuantumNet(nn.Module):
-    pass
+    def __init__(self, quantum_circuit: QuantumCircuit) -> None:
+        super(QuantumNet, self).__init__()
+        self.quantum_circuit = quantum_circuit
+
+    def forward(self, x):
+        pass
 
 
 class HybridClassifier(nn.Module):
