@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import torch.autograd
+
 from part1 import encode, simulator
 
 def histogram_to_category(histogram: dict) -> int:
@@ -88,13 +90,23 @@ class ClassicalNet(nn.Module):
         return x
 
 
+class QuantumFunctions(torch.autograd.Function):
+    @staticmethod
+    def forward():
+        pass
+
+    @staticmethod
+    def backward():
+        pass
+
+
 class QuantumNet(nn.Module):
     def __init__(self, quantum_circuit: QuantumCircuit) -> None:
         super(QuantumNet, self).__init__()
         self.quantum_circuit = quantum_circuit
 
     def forward(self, x):
-        pass
+        return QuantumFunctions.apply(x, self.quantum_circuit)
 
 
 class HybridClassifier(nn.Module):
