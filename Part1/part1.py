@@ -2,12 +2,30 @@ import numpy as np
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, Aer, transpile
 from sklearn.metrics import mean_squared_error
 from scipy.signal import convolve2d
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
+import qiskit
 
+
+def simulate(circuit: qiskit.QuantumCircuit) -> dict:
+    """Simulate the circuit, give the state vector as the result."""
+    backend = BasicAer.get_backend('statevector_simulator')
+    job = execute(circuit, backend)
+    result = job.result()
+    state_vector = result.get_statevector()
+    
+    histogram = dict()
+    for i in range(len(state_vector)):
+        population = abs(state_vector[i]) ** 2
+        if population > 1e-9:
+            histogram[i] = population
+    
+    return histogram
 
 def basis_states_probs(counts):
-    n = len(list(counts.keys())[0])
-    N = sum(list(counts.values()))
-    return np.array([counts[np.binary_repr(vals,n)]/N if counts.get(np.binary_repr(vals,n)) is not None else 0 for vals in range(2**n)])
+    n = N_qubits
+    return np.array([counts[vals] if counts.get(vals) is not None else 0 for vals in range(2**n)])
 
 N_qubits = 16
 values = np.array([ 
@@ -63,7 +81,7 @@ def reduze_size(image):
 
 
 def encoder(image):
-    image = image/np.max(image)
+    image = image/np.max(image) if np.max(image) > 0 else image
     image_reduzed = reduze_size(image)
     q_register = QuantumRegister(N_qubits)
     c_register = ClassicalRegister(N_qubits)
@@ -112,4 +130,7 @@ def decoder(histogram):
     
 
 def run_part1(image):
-    return encoder(image), decoder(image)
+    circuit = encoder(image)
+    histogram = simulate(circuit)
+    image = decoder(histogram)
+    return circuit, image
