@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 
 # Image properties
-SIZE = 7 #28//4  # 28 # Image width
+SIZE = 4 #28//4  # 28 # Image width
 NB_PX_IMG = SIZE ** 2
 
 # quantum parameters
@@ -29,7 +29,7 @@ NB_PX = 2 ** (2 * N)
 def load_images(path: str) -> np.ndarray:
     images = np.load(path)
     images = images / max(images.flatten()) * 255
-    return images[:, ::4, ::4]
+    return images[:, ::8, ::8]
 
 
 def pixel_value_to_theta(pixel: float) -> float:
@@ -56,32 +56,96 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
     # Apply Hadamard gates for all qubits except the last one
     for i in range(NB_QUBITS - 1):
         circuit.h(i)
-    circuit.barrier()
+    #circuit.barrier()
 
     ry_qbits = list(range(NB_QUBITS))
 
-    switches = [bin(0)[2:].zfill(NB_QUBITS)] + [
-        bin(i ^ (i - 1))[2:].zfill(NB_QUBITS) for i in range(1, NB_PX)
+    # Switch is no longer relevant written this way: instead, we should apply the X gates according to
+    # the result of process_image (see above)
+    # intensity_count_expression = process_image(image)
+    # switches = [ice[2][i] ^ ice[2][i-1] for i in range(intensity_count_expression)]
+    # This also means that an optimisation has to be done to minimise the number of X gates applied 
+    # (XOR yielding minimal number of 1s)
+    switches = [bin(0)[2:].zfill(NB_QUBITS - 1)] + [
+        bin(i ^ (i - 1))[2:].zfill(NB_QUBITS - 1) for i in range(1, NB_PX)
     ]
+    print(switches)
+    # TODO remove switches which is not used anymore
 
     # Apply the rotation gates
+    prev_switch = switches[0]
     for i in range(NB_PX):
-        theta = thetas[i]
+        theta = thetas[i] # pixel_value_to_theta(intensity_count_expression[i][0])
+        
+        # do not do zero rotation
+        if theta != 0:
+            switch = np.binary_repr(i, NB_QUBITS - 1)
+            print(switch, prev_switch)
+            # Apply x gate to the i-th qubit if the i-th bit of the switch is 1
+            for j in range(NB_QUBITS - 1):
+                if switch[j] != prev_switch[j]:
+                    print(j, NB_QUBITS, NB_QUBITS - 1 - j + 1)
+                    circuit.x(j)
+                # if switch[j] == "1":
+                #     circuit.x(j - 1)
+            prev_switch = switch
 
-        switch = switches[i]
-        # Apply x gate to the i-th qubit if the i-th bit of the switch is 1
-        for j in range(NB_QUBITS):
-            if switch[j] == "1":
-                circuit.x(j - 1)
-        # TODO: Is this a 2-qubit gate?? -> If not we have to reformulate using 2-qubit gates only (RYGate + CNOT)
-        # TODO: This method may be too slow: as such we have to compress the image by grouping pixels of the same intensity together
-        c3ry = RYGate(2 * theta).control(NB_QUBITS - 1)
-        circuit.append(c3ry, ry_qbits)
+            # TODO: Not a 2-qubit gate: reformulate using 2-qubit gates only (RYGate + CNOT)
+            # Instead of 2 * theta, rotation is 2 * count * theta
+            # where count is stored in intensity_count_expression[1]
+            # where theta is result of pixel_value_to_theta(intensity_count_expression[0])
+            # When simplified expression, control is only on the number of qubits not equal to 2 or - (do not care
 
-        circuit.barrier()
+            # TODO: Not a 2-qubit gate: reformulate using 2-qubit gates only (RYGate + CNOT)
+            # Instead of 2 * theta, rotation is 2 * count * theta
+            # where count is stored in intensity_count_expression[1]
+            # where theta is result of pixel_value_to_theta(intensity_count_expression[0])
+            # When simplified expression, control is only on the number of qubits not equal to 2 or - (do not care)
+            #c3ry = RYGate(2 * theta).control(NB_QUBITS - 1) # intensity_count_expression[i][1] * 2 * theta
+            # In this case, ry_qbits is the position of the qubits not equal to 2 or - (do not care)
+            #circuit.append(c3ry, ry_qbits)
+
+            recursive_ry(circuit, 2*theta, np.array([1]*(NB_QUBITS - 1)))
+
+            #circuit.barrier()
+
+    # check all qbits are at 1 for the measurements
+    for j in range(NB_QUBITS - 1):
+        if prev_switch[j] != "1":
+            circuit.x(j)
+    #print(count_gates(circuit))
 
     circuit.measure_all()
+
+    print(circuit)
     return circuit
+
+def recursive_ry(circuit, theta, mask):
+    if mask.sum() == 2:
+        idxs = np.where(mask == 1)[0]
+        circuit.cry(theta/2, idxs[0], NB_QUBITS - 1)
+        circuit.cx(idxs[0], idxs[1])
+        circuit.cry(-theta/2, idxs[1], NB_QUBITS - 1)
+        circuit.cx(idxs[0], idxs[1])
+        circuit.cry(theta/2, idxs[1], NB_QUBITS - 1)
+    else:
+        idx1, idx2 = np.where(mask == 1)[0][:2]
+        
+        maskn = mask.copy()
+        maskn[idx2] = 0
+        recursive_ry(circuit, theta/2, maskn)
+        # c3ry = RYGate(theta).control(NB_QUBITS - 1)
+        # circuit.append(c3ry, ry_qbits)
+        circuit.cx(idx1, idx2)
+
+        maskn = mask.copy()
+        maskn[idx1] = 0
+        recursive_ry(circuit, -theta/2, maskn)
+        circuit.cx(idx1, idx2)
+
+        maskn = mask.copy()
+        maskn[idx1] = 0
+        recursive_ry(circuit, theta/2, maskn)
 
 
 def decode(counts: dict) -> np.ndarray:
@@ -127,6 +191,8 @@ def simulator(circuit: qiskit.QuantumCircuit) -> dict:
 def run_part1(image: np.ndarray) -> Union[qiskit.QuantumCircuit, np.ndarray]:
     circuit = encode(image)
     counts = simulator(circuit)
+    print(count_gates(circuit))
+    print(dict(circuit.count_ops()))
     img = decode(counts)
     return circuit, img
 

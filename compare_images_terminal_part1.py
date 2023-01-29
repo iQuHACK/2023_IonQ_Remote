@@ -53,3 +53,6 @@ right_image = run_part1(left_image)[1]
 print("Computing done!")
 
 display_images(left_image, right_image)
+
+print(left_image)
+print(right_image)
