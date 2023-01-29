@@ -14,13 +14,12 @@ else:
 
 #define utility functions
 
-def simulate(circuit: cirq.Circuit) -> dict:
-    """This function simulates a Cirq circuit (without measurement) and outputs results in the format of histogram.
-    """
-    simulator = cirq.Simulator()
-    result = simulator.simulate(circuit)
-    
-    state_vector=result.final_state_vector
+def simulate(circuit: qiskit.QuantumCircuit) -> dict:
+    """Simulate the circuit, give the state vector as the result."""
+    backend = BasicAer.get_backend('statevector_simulator')
+    job = execute(circuit, backend)
+    result = job.result()
+    state_vector = result.get_statevector()
     
     histogram = dict()
     for i in range(len(state_vector)):
