@@ -6,13 +6,13 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 
-from utils.utils import simulate, histogram_to_label
+from utils.utils import simulate, histogram_to_category
 
 from sklearn.model_selection import train_test_split
 
 # Import the circuits
 from circuits.encoderFRQI import encode as frqi
-from circuits.encderBASIC import encode as basic_encoder
+from circuits.encoderBASIC import encode as basic_encoder
 
 from circuits.weightsCircuit import encode as weight_layer
 
@@ -23,8 +23,8 @@ def run_training(X, y, encoder_fn, classifier_fn, backend='qiskit'):
     epochs = 1_000
     
     def circuit_wrapper(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
-        circuit = encoder_fn.encode(x)
-        classifier = classifier_fn.encode(w)
+        circuit = encoder_fn(x)
+        classifier = classifier_fn(w)
         
         nq1 = circuit.width()
         nq2 = classifier.width()
@@ -36,11 +36,11 @@ def run_training(X, y, encoder_fn, classifier_fn, backend='qiskit'):
 
         histogram = simulate(qc)
         
-        return = histogram_to_label(histogram)
+        return histogram_to_category(histogram)
 
     
     def loss(params: optax.Params, batch: jnp.ndarray, labels: jnp.ndarray) -> jnp.ndarray:
-        predictions = circuit_wrapper(batch, params, circuit_fn)
+        predictions = circuit_wrapper(batch, params)
         
         y_pred = jax.nn.one_hot(y % 2, 2).astype(jnp.float32).reshape(len(labels), 2)
         loss_value = optax.sigmoid_binary_cross_entropy(y_hat, labels).sum(axis=-1)
