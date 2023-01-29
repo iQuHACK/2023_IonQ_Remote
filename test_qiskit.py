@@ -182,6 +182,39 @@ one_datapoints_normalized = normalize(one_datapoints_array, 100, 1)
 
 print(len(zero_datapoints_normalized))
 print(len(one_datapoints_normalized))
+
+#Now we have data in binary 
+#We have to encode this next
+
+#encode & decodehere
+import qiskit
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+
+# Define the quantum and classical registers
+q = QuantumRegister(16) # n is the number of qubits you want to use
+c = ClassicalRegister(16)
+
+# Create the quantum circuit
+qc = QuantumCircuit(q, c)
+
+# Iterate over each data point and apply rotations
+for i in range(len(train_data_features_reduced)):
+    for j in range(2):
+        qc.ry(train_data_features_reduced[i][j], q[j])
+
+# Measure the qubits and store the result in the classical register
+qc.measure(q, c)
+
+# Execute the circuit on a quantum backend
+backend = qiskit.Aer.get_backend('qasm_simulator')
+result = qiskit.execute(qc, backend, shots=1024).result()
+counts = result.get_counts()
+
+import matplotlib.pyplot as plt
+
+plt.bar(counts.keys(), counts.values(), color='g')
+plt.show()
+
 ############################
 #      END YOUR CODE       #
 ############################
