@@ -1,5 +1,5 @@
 #Team name :- QChar
-#Task :- Task 1 for IONQ Remote challenge
+#Task :- Task 1 and Task 2 for IONQ Remote challenge
 #Team Members :- Keerthi Kumaran (kalagars@purdue.edu/keerthikumaran2001@gmail.com),Rishab Ghosh(rishabghosh.qc@gmail.com), Abhishek Kumar Jha (akj9565@mavs.uta.edu)
 #Qbraid Workspace Owner :- https://lab.qbraid.com/user/keerthikumaran2001@gmail.com/lab/workspaces/auto-R/tree/2023_Ionq_Remote/part1.py
 # https://lab.qbraid.com/user/rishabghosh.qc@gmail.com/lab/tree/2023_IonQ_Remote/testqiskit.py do a pull request before submitting
