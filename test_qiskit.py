@@ -65,8 +65,8 @@ def image_mse(image1,image2):
 
 def test():
     #load the actual hackthon data (fashion-mnist)
-    images=np.load(data_path+'/images.npy')
-    labels=np.load(data_path+'/labels.npy')
+    images=np.load('./data'+'/images.npy')
+    labels=np.load('./data'+'/labels.npy')
     
     #test part 1
 
@@ -121,17 +121,96 @@ def test():
 #      YOUR CODE HERE      #
 ############################
 def encode(image):
-    q = qiskit.QuantumRegister(3)
-    circuit = qiskit.QuantumCircuit(q)
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
+    # Initialize the quantum circuit for the image 
+    # Pixel position
+    idx = QuantumRegister(8, 'idx')
+    # grayscale pixel intensity value
+    intensity = QuantumRegister(8,'intensity')
+    # classical register
+    cr = ClassicalRegister(16, 'cr')
+    # create the quantum circuit for the image
+    qc_image = QuantumCircuit(intensity, idx, cr)
+    # set the total number of qubits
+    num_qubits = qc_image.num_qubits
+    # Initialize the quantum circuit
+    # Optional: Add Identity gates to the intensity values
+    for idx in range(intensity.size):
+        qc_image.i(idx)
+    # Add Hadamard gates to the pixel positions    
+    for i in range(8, 16, 1):
+        #qc_image.h(8)
+        qc_image.h(i)
+    # Separate with barrier so it is easy to read later.
+    qc_image.barrier()
+    qc_image.draw()
+
+    for i in range(64):
+            theta = int ((out[i])*100) #Pixels from given image
+            theta='{0:08b}'.format(theta)
+
+            # Encode the second pixel whose value is (01100100):
+            value01 = theta
+
+            # Add the NOT gate to set the position at 01:
+            qc_image.x(qc_image.num_qubits-1)
+
+            # We'll reverse order the value so it is in the same order when measured.
+            for idx, px_value in enumerate(value01[::-1]):
+                if(px_value=='1'):
+                    qc_image.ccx(num_qubits-1, num_qubits-2, idx)
+
+            # Reset the NOT gate
+            qc_image.x(num_qubits-1)
+
+            qc_image.barrier()
+
+    #qc_image.measure_all()
+    #qc_image.draw()
+    circuit=qc_image
     return circuit
 
 def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
+    
+    # Define the histogramt
+    hist=[]    
+    values=[]
+    values = list(counts_neqr.keys())
+    type(values)
+    key = [value.replace(" 0000000000000000", "") for value in values]
+    pos=[k[:8] for k in key]
+    pxl=[k[:8] for k in key]
+    pxl = [int(p, 2) for p in pxl]
+    print(pxl)
+
+    def get_matrix(row_index, col_index, values):
+        n = max(max(row_index), max(col_index)) + 1
+        matrix = [[0 for _ in range(n)] for _ in range(n)]
+        for r, c, v in zip(row_index, col_index, values):
+        matrix[r][c] = v
+    return matrix
+
+    row_index = [0, 1, 2]
+    col_index = [0, 1, 2]
+    values = [1, 2, 3]
+    print(get_matrix(row_index, col_index, values))
+
+    from PIL import Image
+
+    def array_to_image(arr):
+        # Create a PIL image from the 2D array
+        img = Image.fromarray(arr)
+        # Convert the image to greyscale
+        img = img.convert("L")
+        return img
+
+    # Create the histogram data
+    histogram = pxl
+
+    # Convert the histogram data to a grayscale image
+    img = np.zeros((300, 300), dtype=np.uint8)
+    for i, value in enumerate(histogram):
+        img[:, i*30:(i+1)*30] = value
+    image = img    
     return image
 
 def run_part1(image):
