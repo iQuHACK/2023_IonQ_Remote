@@ -154,7 +154,6 @@ def encode(image):
 #preprocessing - Dimensionality reduction
      
         
-    #@ Rishab   
     from sklearn.decomposition import PCA
     import numpy as np
     image = image.reshape((28, 28))
