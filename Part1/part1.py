@@ -1,3 +1,14 @@
+"""
+The following code is a quantum image compression and decompression code that utilizes qiskit library.
+It consists of several functions:
+
+- simulate: takes a QuantumCircuit and returns a histogram of the statevector simulation result
+- basis_states_probs: takes a histogram and returns the probabilities of all basis states
+- reduze_size: reduces the size of the image
+- encoder: encoding the image into a QuantumCircuit
+- apply_decoder: applies the decoder on the reduced image
+- decoder: decoding the histogram and return the image
+"""
 import numpy as np
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, Aer, transpile
 from sklearn.metrics import mean_squared_error
@@ -68,19 +79,24 @@ max_factor = 0.00392157
 
 
 def reduze_size(image):
+    """Reduces the size of the image from 24x24 to 4x4."""
     Nx, Ny = image.shape
     kx, ky = kernel_encoder.shape
     Dx = Nx//kx
     Dy = Ny//ky
     new_image = np.zeros((Dx, Dy))
+
     for x in range(Dx):
         for y in range(Dy):
             new_image[x, y] = np.sum(kernel_encoder * image[kx*x: kx*(x +1), ky*y: ky*(y+1)])
+            
     new_image = new_image/np.max(new_image)*np.max(image)
     return new_image
 
 
 def encoder(image):
+    """Encoding the image into a QuantumCircuit."""
+
     image = image/np.max(image) if np.max(image) > 0 else image
     image_reduzed = reduze_size(image)
     q_register = QuantumRegister(N_qubits)
@@ -95,26 +111,32 @@ def encoder(image):
     return qc
 
 def apply_decoder(kernel, image_resized):
-        Nx, Ny = image_resized.shape
-        kx, ky = kernel.shape
-        Dx = Nx*kx
-        Dy = Ny*ky
-        new_image = np.zeros((Dx, Dy))
-        for x in range(Nx):
-            for y in range(Ny):
-                new_image[kx*x: kx*(x +1), ky*y: ky*(y+1)] = kernel * image_resized[x, y]
-        return new_image
+    """Applies the decoder to the image."""
+    Nx, Ny = image_resized.shape
+    kx, ky = kernel.shape
+    Dx = Nx*kx
+    Dy = Ny*ky
+    new_image = np.zeros((Dx, Dy))
+
+    for x in range(Nx):
+        for y in range(Ny):
+            new_image[kx*x: kx*(x +1), ky*y: ky*(y+1)] = kernel * image_resized[x, y]
+    return new_image
 
 def decoder(histogram):
+    """Decodes the histogram into an image."""
     probs = basis_states_probs(histogram)
     q_probs = []
+
     for q in range(1, N_qubits+1):
         q_probs.append(np.sum(np.array(np.split(probs,2**q))[np.arange(0,2**q,2)]))
+
     q_probs = np.array(q_probs)[::-1]
     data = np.arccos(np.sqrt(q_probs))*2/np.pi
     image_decoded = np.resize(data, (4, 4))
     result = image_decoded.copy()
     result = apply_decoder(kernels_decoder[0], result)
+
     def layer(kernel, M):
         res = convolve2d(kernel, np.arctan(M))
         nx, ny = res.shape
