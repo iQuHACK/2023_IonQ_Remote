@@ -37,6 +37,38 @@ def split_train_test_data(images: np.ndarray, labels: np.ndarray, train_ratio: f
     return train_images, train_labels, test_images, test_labels
 
 
+class QuantumCircuit:
+    def __init__(self, circuit, backend=qiskit.Aer.get_backend("aer_simulator"), shots=1024):
+        # This circuit will be parametrised by the weights of a upstream NN
+        self.circuit = circuit
+        self.theta = qiskit.circuit.Parameter('theta')
+        self.backend = backend
+        self.shots = shots
+    
+    def simulate(self, weights: np.ndarray):
+        t_qc = qiskit.transpile(self.circuit, self.backend)
+        qobj = qiskit.assemble(t_qc, shots=self.shots, parameter_binds = [{self.theta: weight} for weight in weights])
+        job = self.backend.run(qobj)
+        result = job.result().get_counts(self.circuit)
+        
+        counts = np.array(list(result.values()))
+        states = np.array(list(result.keys())).astype(float)
+                
+        return result
+
+
+class Functions:
+    pass
+
+
+class HybridNet:
+    pass
+
+
+class HybridClassifier:
+    pass
+
+
 def train_classifier():
     pass
 
