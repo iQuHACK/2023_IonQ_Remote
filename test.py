@@ -1,3 +1,7 @@
+# Team Name: quantum potato
+# Team Members: Max C., Shivane D., Adelina C.
+# Task: Part 1 and Part 2
+
 import tensorflow as tf
 import sympy
 import cirq
