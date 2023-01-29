@@ -20,6 +20,7 @@ Or even better, we could have padded the image with zeros to create an embedded 
 By the time we realized this, we had already trained the classifier, and we didn't have time to change it.
 
 The other problem with our solution for part 1 is that we are using 9 qubit gate (instead of multiple 2-qubit gates). Circuit decomposition was taking too long for this (~4 mins) and we didn't have enough time to implement this from the 2-qubit gates. 
+Because of this reason we disabled the assertion in the quantum gate calculation method. 
 
 TODO: 
 second part
