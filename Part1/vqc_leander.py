@@ -10,6 +10,7 @@ import qiskit
 from typing import Dict, List
 from multiprocessing import Process, Manager
 from functools import partial
+from sklearn.metrics import roc_auc_score
 
 
 def vqc(n_qubits, n_layers, params):
@@ -70,7 +71,7 @@ def loss(image, label, parameters):
     histogram=simulate(qc)
     #convert histogram to category
     predict = histogram_to_category(histogram)
-    return (label-predict)**2
+    return (label-predict)**2, predict
 
 def cost_function(iterator, iterator_val, parameters):
     global BEST_LOSS
@@ -82,22 +83,24 @@ def cost_function(iterator, iterator_val, parameters):
         N = len(iterator)
         for i in range(N):
             image, label = iterator[i]
-            cost.append(loss(image, label, parameters))
+            l, predict = loss(image, label, parameters)
+            cost.append([l, label, predict])
         return cost
     
     cost = parallelize('', f, iterator)
-    res = np.mean(cost)
+    res = np.mean(cost[:, 0])
+    roc = roc_auc_score(cost[:, 1], cost[:, 2])
 
-    val = np.mean(parallelize('', f, iterator_val))
+    cost_val = parallelize('', f, iterator_val)
+    val = np.mean(cost_val[:, 0])
+    roc_val = roc_auc_score(cost_val[:, 1], cost_val[:, 2])
 
-
-    if res < BEST_LOSS and val < BEST_VALIDATION:
-        BEST_LOSS = res
+    if val < BEST_VALIDATION:
         BEST_VALIDATION = val
         BEST_PARAMS = parameters
         np.save(open('params.npy', 'wb'), BEST_PARAMS)
     
-    print(f'LOSS: {res} VAL: {val}')
+    print(f'LOSS: {res} VAL: {val} ROC: {roc} ROCVAL: {roc_val}')
     return res  
 
 
