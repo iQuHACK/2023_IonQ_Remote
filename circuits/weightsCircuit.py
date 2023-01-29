@@ -5,17 +5,15 @@ from qiskit import QuantumCircuit
 from qiskit import transpile, assemble
 from math import pi, log2, ceil
 
-qbits=9
+#qbits=9
 
-def encode(w):
-    # TODO should encode the weights matrix which is just 16 parameters
+
+def encode(w): 
+    qubits = len(w)
+    qc = QuantumCircuit(qubits)
     
-    
-    qc = QuantumCircuit(qbits)
-    
-    #prepare the state
-    # TODO: iterate
+    for i in range(len(w)):
+        qc.ry(pi*w[i],qubits[i])
     
     qc=transpile(qc)
-    
     return qc
