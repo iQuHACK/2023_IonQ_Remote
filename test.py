@@ -1,7 +1,4 @@
-import qiskit
-from qiskit import quantum_info
-from qiskit.execute_function import execute
-from qiskit import BasicAer
+import cirq
 import numpy as np
 import pickle
 import json
@@ -9,26 +6,21 @@ import os
 import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
-from typing import Dict, List
-import matplotlib.pyplot as plt
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
-<<<<<<< HEAD
-    data_path = 'data'
-=======
     data_path = '.'
->>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
 
 #define utility functions
 
-def simulate(circuit: qiskit.QuantumCircuit) -> dict:
-    """Simulate the circuit, give the state vector as the result."""
-    backend = BasicAer.get_backend('statevector_simulator')
-    job = execute(circuit, backend)
-    result = job.result()
-    state_vector = result.get_statevector()
+def simulate(circuit: cirq.Circuit) -> dict:
+    """This function simulates a Cirq circuit (without measurement) and outputs results in the format of histogram.
+    """
+    simulator = cirq.Simulator()
+    result = simulator.simulate(circuit)
+    
+    state_vector=result.final_state_vector
     
     histogram = dict()
     for i in range(len(state_vector)):
@@ -51,16 +43,16 @@ def histogram_to_category(histogram):
         
     return positive
 
-def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
-    """Returns the number of gate operations with each number of qubits."""
-    counter = Counter([len(gate[1]) for gate in circuit.data])
+def count_gates(circuit: cirq.Circuit):
+    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
+    counter=Counter([len(op.qubits) for op in circuit.all_operations()])
+    
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
     for i in range(2,20):
         assert counter[i]==0
         
     return counter
-
 
 def image_mse(image1,image2):
     # Using sklearns mean squared error:
@@ -81,7 +73,6 @@ def test():
     for image in images:
         #encode image into circuit
         circuit,image_re=run_part1(image)
-        image_re = np.asarray(image_re)
 
         #count the number of 2qubit gates used
         gatecount+=count_gates(circuit)[2]
@@ -120,30 +111,20 @@ def test():
     
     print(score_part1, ",", score_part2, ",", data_path, sep="")
 
-
 ############################
 #      YOUR CODE HERE      #
 ############################
 def encode(image):
-<<<<<<< HEAD
-    q = qiskit.QuantumRegister(4)
-=======
-    q = qiskit.QuantumRegister(3)
->>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
-    circuit = qiskit.QuantumCircuit(q)
+    circuit=cirq.Circuit()
     if image[0][0]==0:
-        circuit.rx(np.pi,0)
+        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
     return circuit
 
 def decode(histogram):
-<<<<<<< HEAD
-    image = np.load("mean_img.npy")
-=======
     if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
+        image=np.array([[0,0],[0,0]])
     else:
-        image=[[1,1],[1,1]]
->>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
+        image=np.array([[1,1],[1,1]])
     return image
 
 def run_part1(image):
@@ -160,21 +141,18 @@ def run_part1(image):
 
 def run_part2(image):
     # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
+    with open('quantum_classifier.pickle', 'rb') as f:
+        classifier=pickle.load(f)
     
     #encode image into circuit
     circuit=encode(image)
     
     #append with classifier circuit
-    nq1 = circuit.width()
-    nq2 = classifier.width()
-    nq = max(nq1, nq2)
-    qc = qiskit.QuantumCircuit(nq)
-    qc.append(circuit.to_instruction(), list(range(nq1)))
-    qc.append(classifier.to_instruction(), list(range(nq2)))
+    
+    circuit.append(classifier)
     
     #simulate circuit
-    histogram=simulate(qc)
+    histogram=simulate(circuit)
         
     #convert histogram to category
     label=histogram_to_category(histogram)
@@ -191,8 +169,4 @@ def run_part2(image):
 #      END YOUR CODE       #
 ############################
 
-<<<<<<< HEAD
 test()
-=======
-test()
->>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
