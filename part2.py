@@ -36,6 +36,15 @@ def split_train_test_data(images: np.ndarray, labels: np.ndarray, train_ratio: f
     test_labels = labels[nb_train:]
     return train_images, train_labels, test_images, test_labels
 
+## Classes for the Hybrid (classical + quantum) Classifier [HC]
+
+# General idea :
+# The HC is made of three parts:
+#   - A classical neural network whose architecture is defined in the ClassicalNet class
+#   - A quantum circuit whose architecture is defined in the QuantumNet class
+#   The Quantum Net is parametrised by the weights of the Classical Net
+# We also need a forward function that will take the input of the classical net and pass it to the quantum net
+# The HybridClassifier class will be the one gluing all the parts together. It will be the one we will train and use to make predictions
 
 class QuantumCircuit:
     def __init__(self, circuit, backend=qiskit.Aer.get_backend("aer_simulator"), shots=1024):
@@ -61,14 +70,18 @@ class Functions:
     pass
 
 
-class HybridNet:
+class ClassicalNet(nn.Module):
+    pass
+
+
+class QuantumNet(nn.Module):
     pass
 
 
 class HybridClassifier:
     pass
 
-
+# Included in the classes maybe
 def train_classifier():
     pass
 
