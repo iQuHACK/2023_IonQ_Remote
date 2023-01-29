@@ -20,12 +20,13 @@ def value_to_text(value: int) -> str:
 
 
 def display_images(left_image, right_image):
-    for i in range(28):
-        for j in range(28):
+    print("")
+    for i in range(left_image.shape[0]):
+        for j in range(left_image.shape[0]):
             print(value_to_text(left_image[i][j]), end="")
 
         print("   ", end="")
-        for j in range(28):
+        for j in range(left_image.shape[0]):
             try:
                 print(value_to_text(right_image[i][j]), end="")
             except IndexError:
@@ -33,7 +34,7 @@ def display_images(left_image, right_image):
                 break
         print("")
 
-    print("\n" + "Before".center(28 * 2) + "   " + "After".center(28 * 2))
+    print("\n" + "Before".center(left_image.shape[0] * 2) + "   " + "After".center(left_image.shape[0] * 2))
 
 
 # update the images based on the entered number
@@ -48,5 +49,7 @@ except IndexError:
 print(f"Computing for image n° {int(num)}...\n")
 
 right_image = run_part1(left_image)[1]
+
+print("Computing done!")
 
 display_images(left_image, right_image)
