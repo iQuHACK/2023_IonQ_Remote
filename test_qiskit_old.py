@@ -11,13 +11,15 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 from typing import Dict, List
 import matplotlib.pyplot as plt
-from skimage.transform import resize
-from qiskit.circuit.library import RealAmplitudes, ZZFeatureMap
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
+<<<<<<< HEAD
     data_path = 'data'
+=======
+    data_path = '.'
+>>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
 
 #define utility functions
 
@@ -54,8 +56,8 @@ def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
     counter = Counter([len(gate[1]) for gate in circuit.data])
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
-    #for i in range(2,20):
-    #    assert counter[i]==0
+    for i in range(2,20):
+        assert counter[i]==0
         
     return counter
 
@@ -123,19 +125,25 @@ def test():
 #      YOUR CODE HERE      #
 ############################
 def encode(image):
-    #q = qiskit.QuantumRegister(4)
-    #circuit = qiskit.QuantumCircuit(q)
-    #if image[0][0]==0:
-    #    circuit.rx(np.pi,0)
-    heigth,length = 4,1
-    im = image[:,3:8]*255
-    im = resize(im,(heigth,length))
-    feature_map = ZZFeatureMap(4)
-    feature_map = feature_map.bind_parameters(im.reshape(4))
-    return feature_map
+<<<<<<< HEAD
+    q = qiskit.QuantumRegister(4)
+=======
+    q = qiskit.QuantumRegister(3)
+>>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
+    circuit = qiskit.QuantumCircuit(q)
+    if image[0][0]==0:
+        circuit.rx(np.pi,0)
+    return circuit
 
 def decode(histogram):
+<<<<<<< HEAD
     image = np.load("mean_img.npy")
+=======
+    if 1 in histogram.keys():
+        image=[[0,0],[0,0]]
+    else:
+        image=[[1,1],[1,1]]
+>>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
     return image
 
 def run_part1(image):
@@ -152,7 +160,7 @@ def run_part1(image):
 
 def run_part2(image):
     # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('estimator_classifier.qasm')
+    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
     
     #encode image into circuit
     circuit=encode(image)
@@ -183,4 +191,8 @@ def run_part2(image):
 #      END YOUR CODE       #
 ############################
 
+<<<<<<< HEAD
 test()
+=======
+test()
+>>>>>>> fda14e66dad8ed7e6834c279afae7c31d0d58746
