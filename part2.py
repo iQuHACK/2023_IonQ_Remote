@@ -121,7 +121,6 @@ class QuantumFunctions(torch.autograd.Function):
         return grad_output.float() * torch.tensor([gradients]).float(), None
         
 
-
 class QuantumNet(nn.Module):
     def __init__(self, quantum_circuit: QuantumCircuit, shift) -> None:
         super(QuantumNet, self).__init__()
