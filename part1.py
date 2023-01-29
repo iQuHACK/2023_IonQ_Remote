@@ -1,4 +1,23 @@
-#submission to part 1, you should make this into a .py file
+import qiskit
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
+import numpy as np
+import pickle
+import json
+import os
+from collections import Counter
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import normalize
+from typing import Dict, List
+import matplotlib.pyplot as plt
+import math
+from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, execute
+from qiskit.tools.visualization import plot_histogram, circuit_drawer
+from qiskit.providers.aer import UnitarySimulator
+import numpy as np
+from scipy.linalg import orth
 import qiskit
 from qiskit import quantum_info
 from qiskit.execute_function import execute
@@ -11,113 +30,119 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 from typing import Dict, List
 import matplotlib.pyplot as plt
-import numpy as np
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from qiskit.circuit.library.standard_gates import XGate
-from qiskit import transpile
-
+#define utility functions
+def simulate(circuit: qiskit.QuantumCircuit) -> dict:
+    """Simulate the circuit, give the state vector as the result."""
+    backend = BasicAer.get_backend('statevector_simulator')
+    job = execute(circuit, backend)
+    result = job.result()
+    state_vector = result.get_statevector()
+    histogram = dict()
+    for i in range(len(state_vector)):
+        population = abs(state_vector[i]) ** 2
+        if population > 1e-9:
+            histogram[i] = population
+    return histogram
 images=np.load('data/images.npy')
-labels=np.load('data/labels.npy')
+image = np.array(images[1])
 
-n=len(images)
-mse=0
-gatecount=0
-
-def max_pooling(image):
-    image=np.reshape(image,(28,28))
-    new_image=np.zeros((7,7))
-    for i in range(7):
-        for j in range(7):
-            new_image[i,j]=int(np.max(image[i*4:(i+1)*4,j*4:(j+1)*4])*10000)
-    return new_image
-
-
-#max depooling (8x8 -> 28x28)
-def max_depooling(image):
-    image=np.reshape(image,(7,7))
-    new_image=np.zeros((28,28))
-    for i in range(7):
-        for j in range(7):
-            new_image[i*4:(i+1)*4,j*4:(j+1)*4]=image[i,j]/10000
-    return new_image
-
-custom_gate = QuantumCircuit(1, name='custom_gate')
-custom_gate.x(0)
-custom_gate_gate = custom_gate.to_gate().control(6)
-
-# Functions 'encode' and 'decode' are dummy.
 def encode(image):
-    maxPooledImg=max_pooling(image)
-    idx = QuantumRegister(3, 'idx')
-    idy = QuantumRegister(3, 'idy')
-    # grayscale pixel intensity value
-    intensity = QuantumRegister(8,'intensity')
-    # classical register
-    cr = ClassicalRegister(14, 'cr')
+    fa = []
+    for i in image:
+        a = []
+        for item in i:
+            rv = int(item*1000)
+            a.append(rv)
+        fa.append(a)
+    binary_image = np.array([[np.binary_repr(x) for x in row] for row in fa])
+    final_list = []
+    for i in binary_image:
+        jl = []
+        for j in i:
+            a = int(j)
+            jl.append(a)
+        final_list.append(jl)
+    # print(final_list)
+    qc = QuantumCircuit(1)
+    for i in final_list:
+        for j in i:
+            if j == 0:
+                qc.x(0)
+            if j == 1:
+                qc.y(0)
+            if j == 10:
+                qc.z(0)
+            if j == 11:
+                qc.h(0)
+    return qc
 
-    # create the quantum circuit for the image
-    qc_image = QuantumCircuit(intensity, idx, idy, cr)
+# encode(image)
+def split_list(st, chunk_size):
+    return [st[i:i + chunk_size] for i in range (0,len(st),chunk_size)]
 
-    # set the total number of qubits
-    num_qubits = qc_image.num_qubits
-
-    # initialize the qubits
-    qc_image.h(range(8,14))
-    qc_image.barrier()
-    
-    for i in range(7):
-        for j in range(7):
-            for ix,v in enumerate(f'{int(i):b}'.zfill(3)[::-1]):
-                if v=='1':
-                    qc_image.x([ix+8])
-            for iy,v in enumerate(f'{int(j):b}'.zfill(3)[::-1]):
-                if v=='1':
-                    qc_image.x([iy+11])
-            sint=f'{int(maxPooledImg[i,j]):b}'.zfill(8)
-            #print(sint)
-            for idx, px_value in enumerate(sint[::-1]):
-                if px_value=='1':
-                    qc_image.append(custom_gate_gate,[8,9,10,11,12,13,idx])
-            for ix,v in enumerate(f'{int(i):b}'.zfill(3)[::-1]):
-                if v=='1':
-                    qc_image.x([ix+8])
-            for iy,v in enumerate(f'{int(j):b}'.zfill(3)[::-1]):
-                if v=='1':
-                    qc_image.x([iy+11])
-            qc_image.barrier()
-      
-    
-    qc_image.draw()
-    #transpile the circuit
-    qc_image=transpile(qc_image,basis_gates=['cx','x','y','z','id'])
-    return qc_image
-
-def decode(histogram):
-    # decode the histogram into an image where the keys are the qubit values
-    # the first 3 qubits are for the y coordinate
-    # the second 3 qubits are for the x coordinate
-    # the last 8 qubits are for the grayscale pixel intensity value
-    
-    print(histogram)
-    keys=histogram.keys()
-    img=np.zeros((7,7))
-    for i in keys:
-        si=f'{int(i):b}'.zfill(14)
-        print(si)
-        x=int(si[8:11],2) if int(si[8:11],2)<7 else 0
-        y=int(si[11:14],2) if int(si[11:14],2)<7 else 0
-        img[x,y]=int(si[0:8],2)
-        image=max_depooling(img)
-    return image
+def decode(histogram,circuit):
+    data = histogram
+    names = list(data.keys())
+    values = list(data.values())
+    plt.bar(range(len(data)), values, tick_label=names)
+    plt.show()
+    gates = []
+    for gate in circuit.data:
+        gates.append(gate[0].name)
+    remade_list = []
+    # for i in range(28):
+    #     remade_list.append([])
+    for i in gates:
+        for j in i:
+            if j == "x":
+                # remade_list.append(0)
+                remade_list.append(int('0',2)/1000)
+            if j == "y":
+                # remade_list.append(1)
+                remade_list.append(int('1',2)/1000)
+            if j == "z":
+                # remade_list.append(10)
+                remade_list.append(int('10',2)/1000)
+            if j == "h":
+                # remade_list.append(11)
+                remade_list.append(int('11',2)/1000)
+    whole_matrix = split_list(remade_list, len(remade_list) // (image.shape[1]))
+    whole_matrix = np.array(whole_matrix)
+    plt.imshow(whole_matrix)
 
 def run_part1(image):
     #encode image into a circuit
     circuit=encode(image)
-
     #simulate circuit
     histogram=simulate(circuit)
-
     #reconstruct the image
-    image_re=decode(histogram)
-
+    image_re=decode(histogram,circuit)
     return circuit,image_re
+# qc.draw()
+# gates = []
+# for gate in qc.data:
+#     gates.append(gate[0].name)
+plt.imshow(image)
+run_part1(image)
+def generate_images(n_desired):
+
+    count = 0
+    fig, axes = plt.subplots(nrows=1, ncols=n_desired, figsize=(10, 3))
+
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, (data, target) in enumerate(test_loader):
+            if count == n_desired:
+                break
+            output = model(data)
+        
+            pred = output.argmax(dim=1, keepdim=True) 
+
+            axes[count].imshow(data[0].numpy().squeeze())
+
+            axes[count].set_xticks([])
+            axes[count].set_yticks([])
+            axes[count].set_title('Predicted {}'.format(pred.item()))
+        
+            count += 1
+generate_images(3)
