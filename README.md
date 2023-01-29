@@ -1,6 +1,16 @@
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
 
+# Team Information ( Team Feynman Prodigies ) 
+
+1. Abdullah Kazi - kazi.abdullah.temea66@gmail.com 
+2. Onri Jay Benally - benal017@umn.edu
+3. Kevin Jofroit Joven Noriega - kevin.joven@correounivalle.edu.co
+4. Tushar Pandey - tusharp@tamu.edu
+5. Pranav Maheshwari - pranav.maheshwari@students.iiserpune.ac.in
+
+As a group we have worked on IonQ (Remote) Challenge 
+
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
