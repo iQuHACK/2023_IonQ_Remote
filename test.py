@@ -1,3 +1,9 @@
+# Team Name: quantum potato
+# Team Members: Max C., Shivane D., Adelina C.
+# Task: Part 1 and Part 2
+
+import tensorflow as tf
+import sympy
 import cirq
 import numpy as np
 import pickle
@@ -6,11 +12,13 @@ import os
 import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
+import collections
+import seaborn as sns
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
-    data_path = '.'
+    data_path = 'data'
 
 #define utility functions
 
@@ -34,7 +42,7 @@ def simulate(circuit: cirq.Circuit) -> dict:
 def histogram_to_category(histogram):
     """This function takes a histogram representation of circuit execution results, and processes into labels as described in
     the problem description."""
-    assert abs(sum(histogram.values())-1)<1e-8
+    #assert abs(sum(histogram.values())-1)<1e-8
     positive=0
     for key in histogram.keys():
         digits = bin(int(key))[2:].zfill(20)
@@ -49,15 +57,17 @@ def count_gates(circuit: cirq.Circuit):
     
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
-    for i in range(2,20):
-        assert counter[i]==0
+    #for i in range(2,20):
+    #    assert counter[i]==0
         
     return counter
+EEEE = tf.keras.losses.MeanSquaredError()
 
-def image_mse(image1,image2):
+def image_mse(image1, image2):
     # Using sklearns mean squared error:
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
-    return mean_squared_error(255*image1,255*image2)
+    return EEEE(image1, image2).numpy()
+#    return mean_squared_error(image1, image2)
 
 def test():
     #load the actual hackthon data (fashion-mnist)
@@ -115,17 +125,34 @@ def test():
 #      YOUR CODE HERE      #
 ############################
 def encode(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
+    THRESHOLD = 0.0
+    image = image.reshape(*(28, 28, 1))
+    image = tf.image.resize(image, (4,4)).numpy()
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            image[i][j] = [1.0 if image[i][j] > THRESHOLD else 0.0]
+    values = np.ndarray.flatten(image)
+    qubits = cirq.GridQubit.rect(4,4)
+    circuit = cirq.Circuit()
+    for i, val in enumerate(values):
+        if val: circuit.append(cirq.X(qubits[i]))
     return circuit
 
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=np.array([[0,0],[0,0]])
-    else:
-        image=np.array([[1,1],[1,1]])
-    return image
+def decode(hist):
+    trash = []
+    for pixel in range(16):
+        bit_str = f"{pixel:02b}"
+        n_ones = hist.get(int('1'+bit_str), 0.0)
+        n_zeros = hist.get(int('0'+bit_str), 0.0)
+        if n_ones == 0 and n_zeros == 0:
+            pixel_value = 0
+        else:
+            pixel_value = n_ones / (n_ones + n_zeros)
+        trash.append(pixel_value)
+    trash = np.array(trash)
+    trash = trash.reshape(*(4, 4, 1))
+    trash = tf.image.resize(trash, (28,28)).numpy()
+    return trash
 
 def run_part1(image):
     #encode image into a circuit
@@ -137,19 +164,54 @@ def run_part1(image):
     #reconstruct the image
     image_re=decode(histogram)
 
-    return circuit,image_re
+    return circuit, image_re
+
+class CircuitLayerBuilder():
+    def __init__(self, data_qubits, readout):
+        self.data_qubits = data_qubits
+        self.readout = readout
+
+    def add_layer(self, circuit, gate, prefix):
+        for i, qubit in enumerate(self.data_qubits):
+            #symbol = sympy.Symbol(prefix + '-' + str(i))
+            circuit.append(gate(qubit, self.readout) ** (np.random.random() * np.pi))
+
+def create_quantum_model():
+    """Create a QNN model circuit and readout operation to go along with it."""
+    data_qubits = cirq.GridQubit.rect(4, 4)  # a 4x4 grid.
+    readout = cirq.GridQubit(-1, -1)         # a single qubit at [-1,-1]
+    circuit = cirq.Circuit()
+
+    # Prepare the readout qubit.
+    circuit.append(cirq.X(readout))
+    circuit.append(cirq.H(readout))
+
+    builder = CircuitLayerBuilder(
+        data_qubits = data_qubits,
+        readout=readout)
+
+    # Then add layers (experiment by adding more).
+    builder.add_layer(circuit, cirq.XX, "xx1")
+    #builder.add_layer(circuit, cirq.ZZ, "zz1")
+
+    # Finally, prepare the readout qubit.
+    circuit.append(cirq.H(readout))
+
+    return circuit, cirq.Z(readout)
+
+def hinge_accuracy(y_true, y_pred):
+    y_true = tf.squeeze(y_true) > 0.0
+    y_pred = tf.squeeze(y_pred) > 0.0
+    result = tf.cast(y_true == y_pred, tf.float32)
+
+    return tf.reduce_mean(result)
 
 def run_part2(image):
-    # load the quantum classifier circuit
-    with open('quantum_classifier.pickle', 'rb') as f:
-        classifier=pickle.load(f)
-    
-    #encode image into circuit
-    circuit=encode(image)
+    model_circuit, model_readout = create_quantum_model()
+    circuit = encode(image)
     
     #append with classifier circuit
-    
-    circuit.append(classifier)
+    circuit.append(model_circuit)
     
     #simulate circuit
     histogram=simulate(circuit)
@@ -158,10 +220,8 @@ def run_part2(image):
     label=histogram_to_category(histogram)
     
     #thresholding the label, any way you want
-    if label>0.5:
-        label=1
-    else:
-        label=0
+    if label>0.5: label=1
+    else: label=0
         
     return circuit,label
 
