@@ -215,6 +215,87 @@ import matplotlib.pyplot as plt
 plt.bar(counts.keys(), counts.values(), color='g')
 plt.show()
 
+#part 2 cirq method 
+
+import cirq
+import numpy as np
+
+# Slice the arrays to only include the first num_samples of each class
+
+# Define the quantum circuit
+qnn = cirq.Circuit()
+qubits = cirq.LineQubit.range(8)
+
+# Iterate over each data point and apply rotations
+for i in range(len(one_datapoints_normalized)):
+    for j in range(10):
+        qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
+
+# Measure the qubits and store the result in a classical register
+qnn.append(cirq.measure(*qubits))
+
+# Execute the circuit on a quantum simulator
+simulator = cirq.Simulator()
+zero_result = simulator.run(qnn, repetitions=1024)
+
+# Define the quantum circuit
+qnn = cirq.Circuit()
+qubits = cirq.LineQubit.range(8)
+
+# Iterate over each data point and apply rotations
+for i in range(len(one_datapoints_normalized)):
+    for j in range(2):
+        qnn.append(cirq.ry(one_datapoints_normalized[i][j]).on(qubits[j]))
+
+# Measure the qubits and store the result in a classical register
+qnn.append(cirq.measure(*qubits))
+
+# Execute the circuit on a quantum simulator
+simulator = cirq.Simulator()
+one_result = simulator.run(qnn, repetitions=1024)
+
+qubits = cirq.LineQubit.range(16)
+circuit = cirq.Circuit()
+for i in range(len(zero_datapoints_normalized)):
+    for j in range(2):
+        circuit.append(cirq.ry(zero_datapoints_normalized[i][j]).on(qubits[j]))
+
+# Apply quantum gates
+circuit.append(cirq.CNOT(qubits[0], qubits[1]))
+circuit.append(cirq.CZ(qubits[0], qubits[2]))
+circuit.append(cirq.CNOT(qubits[1], qubits[3]))
+
+# Measure the qubits
+for i in range(16):
+    circuit.append(cirq.measure(qubits[i], key=str(i)))
+
+
+#shape
+print (zero_datapoints_normalized.shape)
+print (train_data_labels.shape)
+
+# Now you can use the zero_data and one_data arrays in your Q
+from sklearn.svm import SVC
+clf = SVC()
+train_data_labels_reshaped = train_data_labels.reshape(-1, 1)
+print(len(train_data_labels_reshaped))
+
+num_samples = min(len(zero_datapoints_normalized), len(train_data_labels))
+zero_datapoints_normalized = zero_datapoints_normalized[:num_samples]
+train_data_labels = train_data_labels[:num_samples]
+
+import numpy as np
+# Convert continuous labels to 0s and 1s
+train_data_labels = np.where(train_data_labels > threshold, 1, 0)
+zero_datapoints_normalized = np.where(zero_datapoints_normalized > threshold, 1, 0)
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(zero_datapoints_normalized, train_data_labels, test_size=0.2, random_state=42)
+
+from sklearn.svm import OneClassSVM
+clf = OneClassSVM()
+clf.fit(X_train)
+
 ############################
 #      END YOUR CODE       #
 ############################
