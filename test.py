@@ -132,7 +132,7 @@ def encode(image):
     im = resize(im,(heigth,length))
     feature_map = ZZFeatureMap(4)
     feature_map = feature_map.bind_parameters(im.reshape(4))
-    return feature_map
+    return feature_map.decompose()
 
 def decode(histogram):
     image = np.load("mean_img.npy")
