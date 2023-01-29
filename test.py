@@ -76,11 +76,7 @@ def test():
     mse=0
     gatecount=0
 
-    c = 0
     for image in images:
-        c+=1
-        if c>10:
-            break
         #encode image into circuit
         circuit,image_re=run_part1(image)
         image_re = np.asarray(image_re)
@@ -104,11 +100,7 @@ def test():
     gatecount=0
     n=len(images)
 
-    c=0
     for i in range(n):
-        c+=1
-        if c>10:
-            break
         #run part 2
         circuit,label=run_part2(images[i])
 
@@ -144,32 +136,6 @@ def amplitude_encode(img_data):
     # Return the normalized image as a numpy array
     return np.array(image_norm)
 
-
-# def preprocess_image(images):
-#     images_resized = []
-#     for i in range(images.shape[0]):
-#         # im = cv2.resize(images[i], dsize=(16, 16))
-#         im = resize(images[i], output_shape=(16, 16))
-#         images_resized.append(im)
-#     return np.stack(images_resized, axis=0)
-
-
-# def encode(image):
-#     data_qb = 8  # math.log2(n*n)
-#     anc_qb = 1
-#     total_qb = data_qb + anc_qb
-
-#     image_norm = amplitude_encode(image)
-#     # Initialize the amplitude permutation unitary
-#     D2n_1 = np.roll(np.identity(2 ** total_qb), 1, axis=1)
-
-#     qc = qiskit.QuantumCircuit(total_qb)
-
-#     qc.initialize(image_norm, range(1, total_qb))
-#     qc.h(0)
-#     qc.unitary(D2n_1, range(total_qb))
-#     qc.h(0)
-#     return qc
 
 def encode(image):
     # NOTE: can actually resize the image to make it larger i.e. use n = 32
