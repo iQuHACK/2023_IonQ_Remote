@@ -3,7 +3,7 @@
 
 
 teamname="Feynman's Fashion Rescue"
-task="part 2"
+task="part 1"
 
 import qiskit
 from qiskit import quantum_info
