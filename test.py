@@ -1,3 +1,9 @@
+"""The Somervillains - Code submission for the 2023 MIT iQuHack - IonQ Challenge
+
+Florent Pollet, Pierre Sibut-Bourde, Louis-Justin Tallot
+28-29 January 2023
+"""
+
 import qiskit
 from qiskit import quantum_info
 from qiskit.execute_function import execute
