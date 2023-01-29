@@ -64,8 +64,8 @@ def image_mse(image1,image2):
 
 def test():
     #load the actual hackthon data (fashion-mnist)
-    images=np.load('data/images.npy')[0:10]
-    labels=np.load('data/labels.npy')[0:10]
+    images=np.load('data/images.npy')
+    labels=np.load('data/labels.npy')
     
     #test part 1
 
@@ -176,7 +176,7 @@ def run_part1(image):
     global principal_components
     principal_components = np.load("data/principal_components.npy")
     circuit = encode(image)
-    circuit.measure_all()
+    #circuit.measure_all()
     histogram = simulate(circuit)
     image_re = decode(histogram)
     return circuit, image_re
@@ -184,7 +184,7 @@ def run_part1(image):
 def run_part2(image):
     # load the quantum classifier circuit
     classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
-    classifier.measure_all()
+    #classifier.measure_all()
     #encode image into circuit
     circuit=encode(image)
     circuit.draw()
