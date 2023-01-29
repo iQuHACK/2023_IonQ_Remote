@@ -167,8 +167,6 @@ values = np.array([
 kernel_encoder = np.reshape(values[:7*7], (7, 7))
 kernels_decoder = np.reshape(values[7*7:], (2, 7, 7))
 
-max_factor = 0.00392157
-
 
 def reduze_size(image):
     """Reduces the size of the image from 24x24 to 4x4."""
@@ -239,7 +237,7 @@ def decode(histogram):
     result /= np.max(result) * np.max(image_decoded)
     nx, ny = result.shape
     result = result[nx//2-14:nx//2+14, ny//2-14:ny//2+14]
-    return result * max_factor
+    return result
     
 
 def run_part1(image):
