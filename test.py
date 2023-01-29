@@ -1,10 +1,26 @@
+import cirq
+import numpy as np
+import pickle
+import json
+import os
+import sys
+from collections import Counter
+from sklearn.metrics import mean_squared_error
+
+if len(sys.argv) > 1:
+    data_path = sys.argv[1]
+else:
+    data_path = '.'
+
+    
+    
+    
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # OpenMP: number of parallel threads.
-%env OMP_NUM_THREADS=1
+
 
 # Plotting
-%matplotlib inline
 import matplotlib.pyplot as plt
 
 # PyTorch
@@ -29,6 +45,10 @@ import os
 import random
 import matplotlib.pyplot as plt
 
+from skimage.io import imread, imsave
+import skimage
+
+# My code #
 
 n_qubits = 4                     # Number of qubits
 quantum = True                   # If set to "False", the dressed quantum circuit is replaced by 
@@ -44,6 +64,9 @@ q_delta = 0.01                   # Initial spread of random quantum weights
 rng_seed = 0                     # Seed for random number generator
 start_time = time.time()         # Start of the computation timer
 
+dev = qml.device('default.qubit', wires=n_qubits)
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def H_layer(nqubits):
     """Layer of single-qubit Hadamard gates. 
@@ -191,131 +214,249 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
         time_elapsed = time.time() - since
         print('Training completed in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         print('Best test loss: {:.4f} | Best test accuracy: {:.4f}'.format(best_loss, best_acc))
-        return model
-
-        model_hybrid = train_model(model_hybrid, criterion, optimizer_hybrid,exp_lr_scheduler, num_epochs=2)
-
-dev = qml.device('default.qubit', wires=n_qubits)
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-data_transforms = {
-    'train': transforms.Compose([
-        #transforms.RandomResizedCrop(224),     # uncomment for data augmentation
-        #transforms.RandomHorizontalFlip(),     # uncomment for data augmentation
-        transforms.Resize(28),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        # Normalize input channels using mean values and standard deviations of ImageNet.
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize(28),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
+        return model, best_acc
+        
 
 
-# Load images and labels
-images = np.load("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/images.npy")
-labels = np.load("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/labels.npy")
-
-# Calculate number of images in each dataset
-num_images = len(images)
-num_train = int(0.8 * num_images)
-num_val = num_images - num_train
-
-# Split images and labels into train and val datasets
-train_images = images[:num_train]
-val_images = images[num_train:]
-train_labels = labels[:num_train]
-val_labels = labels[num_train:]
-
-# Make directories for train and val datasets
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/train", exist_ok=True)
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/val", exist_ok=True)
-
-# Make directories for True and False labels in train and val datasets
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/train/True", exist_ok=True)
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/train/False", exist_ok=True)
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/val/True", exist_ok=True)
-os.makedirs("/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/val/False", exist_ok=True)
-
-# Save train images to corresponding True/False directories
-for i, (image, label) in enumerate(zip(train_images, train_labels)):
-    plt.imsave(f"/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/train/{label}/{i}.png", image, cmap='gray')
-
-# Save val images to corresponding True/False directories
-for i, (image, label) in enumerate(zip(val_images, val_labels)):
-    plt.imsave(f"/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/data/val/{label}/{i}.png", image, cmap='gray')
-
-data_transforms = {
-    'train': transforms.Compose([
-        #transforms.RandomResizedCrop(224),     # uncomment for data augmentation
-        #transforms.RandomHorizontalFlip(),     # uncomment for data augmentation
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        # Normalize input channels using mean values and standard deviations of ImageNet.
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
-
-data_dir = '/workspaces/2023_IonQ_Remote/.ipynb_checkpoints/Class_Data'
-image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-                     data_transforms[x]) for x in ['train', 'val']}
-dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-class_names = image_datasets['train'].classes
-
-# Initialize dataloader
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
-                  batch_size=batch_size, shuffle=True) for x in ['train', 'val']}
+        
+def run_part2_my():
+    data_transforms = {
+        'train': transforms.Compose([
+            #transforms.RandomResizedCrop(224),     # uncomment for data augmentation
+            #transforms.RandomHorizontalFlip(),     # uncomment for data augmentation
+            transforms.Resize(28),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            # Normalize input channels using mean values and standard deviations of ImageNet.
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(28),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
 
 
-# Get a batch of training data
-inputs, classes = next(iter(dataloaders['val']))
-# Make a grid from batch
-out = torchvision.utils.make_grid(inputs)
-from skimage.io import imread, imsave
-import skimage
+    # Load images and labels
+    images = np.load("data/images.npy")
+    labels = np.load("data/labels.npy")
 
-#imshow(out, title=[class_names[x] for x in classes])
+    # Calculate number of images in each dataset
+    num_images = len(images)
+    num_train = int(0.8 * num_images)
+    num_val = num_images - num_train
 
-torch.manual_seed(rng_seed)
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
-                  batch_size=batch_size,shuffle=True) for x in ['train', 'val']}
+    # Split images and labels into train and val datasets
+    train_images = images[:num_train]
+    val_images = images[num_train:]
+    train_labels = labels[:num_train]
+    val_labels = labels[num_train:]
 
+    # Make directories for train and val datasets
+    os.makedirs("data/class/train", exist_ok=True)
+    os.makedirs("data/class/val", exist_ok=True)
 
+    # Make directories for True and False labels in train and val datasets
+    os.makedirs("data/class/train/True", exist_ok=True)
+    os.makedirs("data/class/train/False", exist_ok=True)
+    os.makedirs("data/class/val/True", exist_ok=True)
+    os.makedirs("data/class/val/False", exist_ok=True)
 
-model_hybrid = torchvision.models.resnet18(pretrained=True)
+    # Save train images to corresponding True/False directories
+    for i, (image, label) in enumerate(zip(train_images, train_labels)):
+        plt.imsave(f"data/class/train/{label}/{i}.png", image, cmap='gray')
 
-for param in model_hybrid.parameters():
-    param.requires_grad = False
+    # Save val images to corresponding True/False directories
+    for i, (image, label) in enumerate(zip(val_images, val_labels)):
+        plt.imsave(f"data/class/val/{label}/{i}.png", image, cmap='gray')
+
+    data_transforms = {
+        'train': transforms.Compose([
+            #transforms.RandomResizedCrop(224),     # uncomment for data augmentation
+            #transforms.RandomHorizontalFlip(),     # uncomment for data augmentation
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            # Normalize input channels using mean values and standard deviations of ImageNet.
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
+
+    data_dir = 'data/class'
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+                         data_transforms[x]) for x in ['train', 'val']}
+    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+    class_names = image_datasets['train'].classes
+
+    # Initialize dataloader
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
+                      batch_size=batch_size, shuffle=True) for x in ['train', 'val']}
     
-if quantum:
-    model_hybrid.fc = Quantumnet()
     
-elif classical_model == '512_2':
-    model_hybrid.fc = nn.Linear(512, 2)
     
-elif classical_model == '512_nq_2':
-    model_hybrid.fc = nn.Sequential(nn.Linear(512, n_qubits), torch.nn.ReLU(), nn.Linear(n_qubits, 2)) 
 
-elif classical_model == '551_512_2':
-    model_hybrid.fc = nn.Sequential(nn.Linear(512, 512), torch.nn.ReLU(), nn.Linear(512, 2))
+    # Get a batch of training data
+    inputs, classes = next(iter(dataloaders['val']))
+    # Make a grid from batch
+    out = torchvision.utils.make_grid(inputs)
 
-# Use CUDA or CPU according to the "device" object.
-model_hybrid = model_hybrid.to(device)
+    #imshow(out, title=[class_names[x] for x in classes])
 
-criterion = nn.CrossEntropyLoss()
-optimizer_hybrid = optim.Adam(model_hybrid.fc.parameters(), lr=step)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_hybrid, step_size=10, gamma=gamma_lr_scheduler)
+    torch.manual_seed(rng_seed)
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
+                      batch_size=batch_size,shuffle=True) for x in ['train', 'val']}
 
+
+
+    model_hybrid = torchvision.models.resnet18(pretrained=True)
+
+    for param in model_hybrid.parameters():
+        param.requires_grad = False
+
+    if quantum:
+        model_hybrid.fc = Quantumnet()
+
+    elif classical_model == '512_2':
+        model_hybrid.fc = nn.Linear(512, 2)
+
+    elif classical_model == '512_nq_2':
+        model_hybrid.fc = nn.Sequential(nn.Linear(512, n_qubits), torch.nn.ReLU(), nn.Linear(n_qubits, 2)) 
+
+    elif classical_model == '551_512_2':
+        model_hybrid.fc = nn.Sequential(nn.Linear(512, 512), torch.nn.ReLU(), nn.Linear(512, 2))
+
+    # Use CUDA or CPU according to the "device" object.
+    model_hybrid = model_hybrid.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer_hybrid = optim.Adam(model_hybrid.fc.parameters(), lr=step)
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_hybrid, step_size=10, gamma=gamma_lr_scheduler)
+    
+    model_hybrid = train_model(model_hybrid, criterion, optimizer_hybrid,exp_lr_scheduler, num_epochs=2)
+    
+    return model_hybrid.best_acc
+
+# My code #
+        
+#define utility functions
+
+
+
+def count_gates(num_qubits, depth):
+    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
+    
+    counter = num_qubits * depth
+        
+    return counter
+
+
+def image_mse(image1,image2):
+    # Using sklearns mean squared error:
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
+    return mean_squared_error(255*image1,255*image2)
+
+def test():
+    #load the actual hackthon data (fashion-mnist)
+    images=np.load(data_path+'/images.npy')
+    labels=np.load(data_path+'/labels.npy')
+    
+    #test part 1
+
+    n=len(images)
+    mse=0
+    gatecount=0
+
+    for image in images:
+        #encode image into circuit
+        circuit,image_re=run_part1(image)
+
+        #count the number of 2qubit gates used
+        gatecount+=count_gates(circuit)[2]
+
+        #calculate mse
+        mse+=image_mse(image,image_re)
+
+    #fidelity of reconstruction
+    f=1-mse/n
+    gatecount=gatecount/n
+
+    #score for part1
+    score_part1=f*(0.999**gatecount)
+    
+    #test part 2
+    
+    #score
+    score= run_part2_my()
+    gatecount= count_gates(n_qubits, q_depth)
+
+    score_part2=score*(0.999**gatecount)
+    
+    print(score_part1, ",", score_part2, ",", data_path, sep="")
+
+############################
+#      YOUR CODE HERE      #
+############################
+def encode(image):
+    circuit=cirq.Circuit()
+    if image[0][0]==0:
+        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
+    return circuit
+
+def decode(histogram):
+    if 1 in histogram.keys():
+        image=np.array([[0,0],[0,0]])
+    else:
+        image=np.array([[1,1],[1,1]])
+    return image
+
+def run_part1(image):
+    #encode image into a circuit
+    circuit=encode(image)
+
+    #simulate circuit
+    histogram=simulate(circuit)
+
+    #reconstruct the image
+    image_re=decode(histogram)
+
+    return circuit,image_re
+
+def run_part2(image):
+    # load the quantum classifier circuit
+    with open('quantum_classifier.pickle', 'rb') as f:
+        classifier=pickle.load(f)
+    
+    #encode image into circuit
+    circuit=encode(image)
+    
+    #append with classifier circuit
+    
+    circuit.append(classifier)
+    
+    #simulate circuit
+    histogram=simulate(circuit)
+        
+    #convert histogram to category
+    label=histogram_to_category(histogram)
+    
+    #thresholding the label, any way you want
+    if label>0.5:
+        label=1
+    else:
+        label=0
+        
+    return circuit,label
+
+############################
+#      END YOUR CODE       #
+############################
+
+test()
