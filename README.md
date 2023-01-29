@@ -22,8 +22,10 @@ By the time we realized this, we had already trained the classifier, and we didn
 The other problem with our solution for part 1 is that we are using 9 qubit gate (instead of multiple 2-qubit gates). Circuit decomposition was taking too long for this (~4 mins) and we didn't have enough time to implement this from the 2-qubit gates. 
 Because of this reason we disabled the assertion in the quantum gate calculation method. 
 
-TODO: 
-second part
+For the second part, we used a paramterized quantum circuit of *Circuit 2* defined in [Expressibility and entangling capability of parameterized quantum circuits for hybrid quantum-classical algorithms](https://arxiv.org/pdf/1905.10876.pdf). 
+In particular, we applied 3 layers of this ansatz containing 6N parameters, where N is the number of qubits.
++ The SPSA optimizer was employed in our training with hyper-parameters of c=1, and a = 1/5 with *Mean Square Error* as the loss function.
++ Because of limited time, we train the classifier with 16x16 images with the total of 9 qubits in the circuits. For simplicity, we only use a dataset of 100 images for training 50 of each class.
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
