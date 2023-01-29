@@ -240,7 +240,6 @@ def run_part2(image):
     label = histogram_to_category(histogram)
 
     # thresholding the label, any way you want
-    print(label)
     if label > 0.4:
         label = 1
     else:
