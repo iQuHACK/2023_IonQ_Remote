@@ -4,6 +4,8 @@ Florent Pollet, Pierre Sibut-Bourde, Louis-Justin Tallot
 28-29 January 2023
 """
 
+team_name = "The Somervillains"
+
 import qiskit
 from qiskit import quantum_info
 from qiskit.execute_function import execute
