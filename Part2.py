@@ -38,7 +38,7 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
         bin(i ^ (i - 1))[2:].zfill(NB_QUBITS - 1) for i in range(1, NB_PX)
     ]
 
-    # TODO remove switches which is not used anymore
+ 
 
     # Apply the rotation gates
     prev_switch = switches[0]
@@ -57,20 +57,16 @@ def encode(image: np.ndarray) -> qiskit.QuantumCircuit:
                 #     circuit.x(j - 1)
             prev_switch = switch
 
-            # TODO: Not a 2-qubit gate: reformulate using 2-qubit gates only (RYGate + CNOT)
-            # Instead of 2 * theta, rotation is 2 * count * theta
-            # where count is stored in intensity_count_expression[1]
-            # where theta is result of pixel_value_to_theta(intensity_count_expression[0])
-            # When simplified expression, control is only on the number of qubits not equal to 2 or - (do not care
+            
 
             # TODO: Not a 2-qubit gate: reformulate using 2-qubit gates only (RYGate + CNOT)
             # Instead of 2 * theta, rotation is 2 * count * theta
             # where count is stored in intensity_count_expression[1]
             # where theta is result of pixel_value_to_theta(intensity_count_expression[0])
             # When simplified expression, control is only on the number of qubits not equal to 2 or - (do not care)
-            #c3ry = RYGate(2 * theta).control(NB_QUBITS - 1) # intensity_count_expression[i][1] * 2 * theta
+            c3ry = RYGate(2 * theta).control(NB_QUBITS - 1) # intensity_count_expression[i][1] * 2 * theta
             # In this case, ry_qbits is the position of the qubits not equal to 2 or - (do not care)
-            #circuit.append(c3ry, ry_qbits)
+            circuit.append(c3ry, ry_qbits)
 
             recursive_ry(circuit, 2*theta, np.array([1]*(NB_QUBITS - 1)))
 
@@ -153,7 +149,7 @@ class QuantumCircuit:
 class ClassicalNet(nn.Module):
     def __init__(self):
         super(ClassicalNet, self).__init__()
-        # TODO: Replace with better architecture
+        
         self.conv1 = nn.Conv2d(1, 6, kernel_size=5)
         self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
         self.dropout = nn.Dropout2d()
@@ -259,5 +255,5 @@ if __name__ == "__main__":
     labels = np.load('data/labels.npy')
     train_images, train_labels, test_images, test_labels = split_train_test_data(images, labels)
 
-    classifier = load_qasm('part2.qasm') # To be integrated to a classical NN
-    print(classifier)
+    # classifier = load_qasm('part2.qasm') # To be integrated to a classical NN
+    # print(classifier)
