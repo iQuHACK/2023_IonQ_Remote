@@ -27,7 +27,7 @@ import collections
 # visualization tools
 
 import matplotlib.pyplot as plt
-%matplotlib inline
+#%matplotlib inline
 from cirq.contrib.svg import SVGCircuit
 
 
