@@ -25,8 +25,9 @@ import seaborn as sns
 import collections
 
 # visualization tools
-%matplotlib inline
+
 import matplotlib.pyplot as plt
+%matplotlib inline
 from cirq.contrib.svg import SVGCircuit
 
 
