@@ -11,8 +11,8 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 from typing import Dict, List
 import matplotlib.pyplot as plt
-# import cv2
-from skimage.transform import resize
+import cv2
+# from skimage.transform import resize
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
@@ -141,7 +141,7 @@ def encode(image):
     # NOTE: can actually resize the image to make it larger i.e. use n = 32
     n = 16
 
-    im = resize(image, output_shape=(n, n))
+    im = cv2.resize(image, dsize=(n, n))
 
     image_norm = amplitude_encode(im)
     data_qb = 8  # math.log2(n*n)
@@ -172,7 +172,7 @@ def decode(histogram):
         sva[key] = value
 
     # NOTE: not sure about subsampling every second item
-    return resize(sva[::2].reshape((n, n)), output_shape=(28,28))
+    return cv2.resize(sva[::2].reshape((n, n)), dsize=(28,28))
 
 
 def run_part1(image):
