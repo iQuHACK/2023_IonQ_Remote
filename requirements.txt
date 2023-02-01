@@ -1,0 +1,8 @@
+matplotlib==3.6.3
+numpy==1.23.5
+Pillow==9.4.0
+qiskit==0.41.0
+qiskit_terra==0.22.4
+scikit_learn==1.2.1
+scipy==1.10.0
+torch==1.13.1
