@@ -1,0 +1,6 @@
+matplotlib==3.2.2
+numpy==1.21.6
+qiskit==0.41.0
+qiskit-terra==0.23.1
+qiskit_machine_learning==0.5.0
+sklearn==1.0.2
