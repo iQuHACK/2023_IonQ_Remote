@@ -73,6 +73,7 @@ isodate==0.6.1
 jedi @ file:///home/conda/feedstock_root/build_artifacts/jedi_1637175083648/work
 Jinja2 @ file:///home/conda/feedstock_root/build_artifacts/jinja2_1636510082894/work
 jmespath==1.0.1
+joblib==1.2.0
 json5 @ file:///home/conda/feedstock_root/build_artifacts/json5_1600692310011/work
 jsonschema @ file:///home/conda/feedstock_root/build_artifacts/jsonschema-meta_1642000296051/work
 jupyter-bokeh==3.0.5
@@ -115,6 +116,7 @@ notebook-shim @ file:///home/conda/feedstock_root/build_artifacts/notebook-shim_
 ntlm-auth==1.5.0
 numpy==1.23.5
 oauthlib @ file:///home/conda/feedstock_root/build_artifacts/oauthlib_1643507977997/work
+opencv-python==4.7.0.68
 packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1637239678211/work
 pamela==1.0.0
 pandas==1.5.3
@@ -175,6 +177,7 @@ ruamel.yaml @ file:///home/conda/feedstock_root/build_artifacts/ruamel.yaml_1644
 ruamel.yaml.clib @ file:///home/conda/feedstock_root/build_artifacts/ruamel.yaml.clib_1636815619750/work
 rustworkx==0.12.1
 s3transfer==0.6.0
+scikit-learn==1.2.1
 scipy==1.10.0
 Send2Trash @ file:///home/conda/feedstock_root/build_artifacts/send2trash_1628511208346/work
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
@@ -189,6 +192,7 @@ symengine==0.9.2
 sympy==1.11.1
 terminado @ file:///home/conda/feedstock_root/build_artifacts/terminado_1646684455438/work
 testpath @ file:///home/conda/feedstock_root/build_artifacts/testpath_1645693042223/work
+threadpoolctl==3.1.0
 tinycss2==1.2.1
 tomli==2.0.1
 tornado @ file:///home/conda/feedstock_root/build_artifacts/tornado_1635819584296/work
