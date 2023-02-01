@@ -3,6 +3,7 @@ task = 'part 1'
 
 import os
 import qiskit
+import sklearn
 from qiskit import quantum_info
 from qiskit.execute_function import execute
 from qiskit import BasicAer
