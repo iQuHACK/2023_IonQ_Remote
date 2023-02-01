@@ -1,8 +1,8 @@
 cirq==1.1.0
-cirq_core==1.0.0
+cirq_core==1.1.0
 matplotlib==3.5.3
 numpy==1.23.2
-qiskit==0.41.0
-qiskit_terra==0.21.2
+qiskit==0.40.0
+qiskit_terra==0.23.0
 scikit_image==0.19.3
 scikit_learn==1.2.1
