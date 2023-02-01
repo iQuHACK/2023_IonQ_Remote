@@ -195,6 +195,8 @@ testpath @ file:///home/conda/feedstock_root/build_artifacts/testpath_1645693042
 threadpoolctl==3.1.0
 tinycss2==1.2.1
 tomli==2.0.1
+torch==1.13.1
+torchvision==0.14.1
 tornado @ file:///home/conda/feedstock_root/build_artifacts/tornado_1635819584296/work
 tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1632160078689/work
 traitlets==5.8.1
