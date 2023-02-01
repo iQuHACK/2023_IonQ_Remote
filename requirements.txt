@@ -1,0 +1,11 @@
+cirq==1.1.0
+cirq_core==1.1.0
+matplotlib==3.6.3
+numpy==1.23.5
+qiskit==0.41.0
+qiskit_terra==0.22.4
+scikit_learn==1.2.1
+seaborn==0.12.2
+sympy==1.11.1
+tensorflow==2.9.1
+tensorflow_quantum==0.7.2
