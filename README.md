@@ -1,6 +1,31 @@
-# 2023_planning_ionq
-IonQ's repository for iQuHACK 2023 (private planning)
+# 2023 iQuHack IonQ Remote Challenge
 
+# Team "TheUntitledTeam"
+
+# Members 
+
+* agercas
+* carleseb
+* Gopal-Dahale
+* ichirokira
+* Loe-web
+
+# Write-up
+For the first part, we tried using FRQI and NEQR (as described [here](https://qiskit.org/textbook/ch-applications/image-processing-frqi-neqr.html)) for image encoding. 
+At the moment, these are considered state-of-the-art quantum image encoding methods. However, we quickly noticed that although the encoding was producing good results, it was extremely inefficient (encoding a single image took 2-4 minutes). 
+Hence, we decided to try Amplitude encoding instead (as described [here](https://qiskit.org/textbook/ch-applications/quantum-edge-detection.html)). 
+Early on we made a decision to rescale the images from 28x28 to 16x16 and use 9 qubits for encoding. These produced very good results, so we carried on. 
+In hindsight, this was a small mistake. Since we can use up to 16 qubits, it would have been better to either resize the image to 32x32 and use all 16 qubits for encoding. 
+Or even better, we could have padded the image with zeros to create an embedded 32x32 image and use all 16 qubits (without any loss of information). 
+By the time we realized this, we had already trained the classifier, and we didn't have time to change it.
+
+The other problem with our solution for part 1 is that we are using 9 qubit gate (instead of multiple 2-qubit gates). Circuit decomposition was taking too long for this (~4 mins) and we didn't have enough time to implement this from the 2-qubit gates. 
+Because of this reason we disabled the assertion in the quantum gate calculation method. 
+
+For the second part, we used a paramterized quantum circuit of *Circuit 2* defined in [Expressibility and entangling capability of parameterized quantum circuits for hybrid quantum-classical algorithms](https://arxiv.org/pdf/1905.10876.pdf). 
+In particular, we applied 3 layers of this ansatz containing 6N parameters, where N is the number of qubits.
++ The SPSA optimizer was used for training with hyperparameter values of c=1, and a = 1/5 and *Mean Square Error* as the loss function.
++ Because of limited time, we only trained the classifier with the resized 16x16 images and the total of 9 qubits in the circuits. For simplicity, we only use a dataset of 100 images for training 50 of each class.
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
