@@ -24,8 +24,8 @@ Because of this reason we disabled the assertion in the quantum gate calculation
 
 For the second part, we used a paramterized quantum circuit of *Circuit 2* defined in [Expressibility and entangling capability of parameterized quantum circuits for hybrid quantum-classical algorithms](https://arxiv.org/pdf/1905.10876.pdf). 
 In particular, we applied 3 layers of this ansatz containing 6N parameters, where N is the number of qubits.
-+ The SPSA optimizer was employed in our training with hyper-parameters of c=1, and a = 1/5 with *Mean Square Error* as the loss function.
-+ Because of limited time, we train the classifier with 16x16 images with the total of 9 qubits in the circuits. For simplicity, we only use a dataset of 100 images for training 50 of each class.
++ The SPSA optimizer was used for training with hyperparameter values of c=1, and a = 1/5 and *Mean Square Error* as the loss function.
++ Because of limited time, we only trained the classifier with the resized 16x16 images and the total of 9 qubits in the circuits. For simplicity, we only use a dataset of 100 images for training 50 of each class.
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
