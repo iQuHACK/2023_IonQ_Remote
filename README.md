@@ -1,5 +1,17 @@
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
+Consider files starting with pickle for evaluation.
+We have two different schemes one using 16 qubits and another using 4 qubits. We request you to consider both for correct evaluation of our hardwork.
+
+# Team Information ( Team Feynman Prodigies ) 
+
+1. Abdullah Kazi - kazi.abdullah.temea66@gmail.com 
+2. Onri Jay Benally - benal017@umn.edu
+3. Kevin Jofroit Joven Noriega - kevin.joven@correounivalle.edu.co
+4. Tushar Pandey - tusharp@tamu.edu
+5. Pranav Maheshwari - pranav.maheshwari@students.iiserpune.ac.in
+
+As a group we have worked on IonQ (Remote) Challenge 
 
 
 ## Working on qBraid
