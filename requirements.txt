@@ -1,0 +1,4 @@
+qiskit
+matplotlib
+tensorflow
+scikit-learn
