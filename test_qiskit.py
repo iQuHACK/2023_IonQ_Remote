@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
 else:
-    data_path = '.'
+    data_path = 'data'#'.'
 
 #define utility functions
 
