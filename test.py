@@ -114,57 +114,6 @@ def test():
 ############################
 #      YOUR CODE HERE      #
 ############################
-def encode(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
-
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=np.array([[0,0],[0,0]])
-    else:
-        image=np.array([[1,1],[1,1]])
-    return image
-
-def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
-
-    #simulate circuit
-    histogram=simulate(circuit)
-
-    #reconstruct the image
-    image_re=decode(histogram)
-
-    return circuit,image_re
-
-def run_part2(image):
-    # load the quantum classifier circuit
-    with open('quantum_classifier.pickle', 'rb') as f:
-        classifier=pickle.load(f)
-    
-    #encode image into circuit
-    circuit=encode(image)
-    
-    #append with classifier circuit
-    
-    circuit.append(classifier)
-    
-    #simulate circuit
-    histogram=simulate(circuit)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
-    else:
-        label=0
-        
-    return circuit,label
-
 ############################
 #      END YOUR CODE       #
 ############################

@@ -120,60 +120,71 @@ def test():
 ############################
 #      YOUR CODE HERE      #
 ############################
-def encode(image):
-    q = qiskit.QuantumRegister(3)
-    circuit = qiskit.QuantumCircuit(q)
-    if image[0][0]==0:
-        circuit.rx(np.pi,0)
-    return circuit
+import matplotlib.pyplot as plt
+from qiskit.visualization import plot_histogram
+from qiskit import Aer, QuantumCircuit
+from qiskit.circuit.library import TwoLocal
+from IPython.display import display
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import pickle
 
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=[[0,0],[0,0]]
-    else:
-        image=[[1,1],[1,1]]
-    return image
+shots = 50000
+# Create the quantum feature map (in this case a TwoLocal)
+qc = TwoLocal(7, ['ry', 'rx'], 'cx', reps=1, entanglement='linear', 
+                           insert_barriers=True, parameter_prefix='x')
+
+def encoder(image):
+    encd = QuantumCircuit(7,7)
+    encd += qc.assign_parameters(image*np.pi)
+    encd.measure(range(7), range(7))
+    display(encd.decompose().draw(output = "mpl", fold = -1))
+
+    backend = Aer.get_backend('aer_simulator')
+    counts = backend.run(encd.decompose(), shots = shots).result().get_counts()
+    display(plot_histogram(counts))
+    return encd, counts
+
+def decoder(histogram):
+    recImg = []
+    for ii in range(16):
+        u = []
+        for jj in range(8):
+            if str(format(8*ii+jj,'07b')) in histogram:
+                u.append(histogram[format(8*ii+jj,'07b')]/shots)
+            else:
+                u.append(0)   
+        recImg.append(u)
+    plt.imshow(recImg)
 
 def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
-
-    #simulate circuit
-    histogram=simulate(circuit)
-
-    #reconstruct the image
-    image_re=decode(histogram)
-
-    return circuit,image_re
+    circ, hist = encoder(image)
+    decoder(hist)
+    
 
 def run_part2(image):
-    # load the quantum classifier circuit
-    classifier=qiskit.QuantumCircuit.from_qasm_file('quantum_classifier.qasm')
     
-    #encode image into circuit
-    circuit=encode(image)
+    if type(image[0]) == "array" and len(image[0]) != 28:
+        infile = open("part2.pickle",'rb')
+        qsvc = pickle.load(infile)
+        infile.close()
+        # reduce dimensions
+        n_dim = 28
+        pca = PCA(n_components=n_dim).fit(image)
+        image = pca.transform(image)
+
+        # standardize
+        std_scale = StandardScaler().fit(image)
+        image = std_scale.transform(image)
+
+        # Normalize
+        minmax_scale = MinMaxScaler((-1, 1)).fit(samples)
+        image = minmax_scale.transform(image)
     
-    #append with classifier circuit
-    nq1 = circuit.width()
-    nq2 = classifier.width()
-    nq = max(nq1, nq2)
-    qc = qiskit.QuantumCircuit(nq)
-    qc.append(circuit.to_instruction(), list(range(nq1)))
-    qc.append(classifier.to_instruction(), list(range(nq2)))
-    
-    #simulate circuit
-    histogram=simulate(qc)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
-    else:
-        label=0
-        
-    return circuit,label
+    encd = encoder(image)
+    return qsvc.predict(image)
+
 
 ############################
 #      END YOUR CODE       #
