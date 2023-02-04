@@ -167,6 +167,7 @@ def run_part2(image):
     
     #simulate circuit
     histogram=simulate(qc)
+
         
     #convert histogram to category
     label=histogram_to_category(histogram)
