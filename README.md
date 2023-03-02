@@ -1,3 +1,9 @@
+# Team Participants
+- Seabastián Dominguez Calderón A01702874@tec.mx
+- Jesús Fabián Macías Amador    A00830408@tec.mx
+- Fabián Hernández              A00831639@tec.mx
+- Jesús Gúzman                  A01748695@tec.mx
+
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
 
