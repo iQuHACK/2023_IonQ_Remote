@@ -1,6 +1,18 @@
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
 
+## Team Qiao
+
+Giuliana Siddi ,, julie@crs4.it, Giuliana Siddi Moreau (Slack), GSiddiMoreau (github)
+
+Xiaoran Li, x832li@uwaterloo.ca
+
+David Liu, Liud@pfw.edu, David L (Slack) davidlearn (github)
+
+FuTe Wong, fute.wong@mail.utoronto.ca, FuTe
+
+Phung Cheng Fei, feiphung@hotmail.com
+
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
