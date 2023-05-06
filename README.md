@@ -1,6 +1,18 @@
 # 2023_planning_ionq
 IonQ's repository for iQuHACK 2023 (private planning)
 
+## Team Qiao
+
+Giuliana Siddi ,, julie@crs4.it, Giuliana Siddi Moreau (Slack), GSiddiMoreau (github)
+
+Xiaoran Li, x832li@uwaterloo.ca
+
+David Liu, Liud@pfw.edu, David L (Slack) davidlearn (github)
+
+FuTe Wong, fute.wong@mail.utoronto.ca, FuTe
+
+Phung Cheng Fei, feiphung@hotmail.com
+
 
 ## Working on qBraid
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/iQuHACK/2023_planning_ionq.git)
@@ -20,3 +32,15 @@ git checkout <team_name>
 7. You are now ready to begin hacking! Work with your team to complete the challenges.
 
 For other questions or additional help using qBraid, see [Lab User Guide](https://qbraid-qbraid.readthedocs-hosted.com/en/latest/lab/overview.html), or reach out on [Discord](https://discord.gg/gwBebaBZZX).
+
+### qBraid Auto Grader Submission Process To Leaderboard:
+
+**PLEASE MAKE SURE TO DO THE FOLLOWING BEFORE YOU SUBMIT**
+
+- Your team name, task #, and a point person's slack name (just in case we need to reach out).
+Once you have completed any of the tasks and have added the team name, task # and a point person's slack name, if you are confused). Please got to File (**File** on the top left of the topbar) and click on the `Share notebook` button.
+<img width="319" alt="スクリーンショット 2023-01-26 午後4 42 50" src="https://user-images.githubusercontent.com/32727721/214967319-3d2f64ec-19f8-4a06-bf20-0690f8f0e29e.png">
+
+- Enter `rickyyoung@qbraid.com` and share the file. If it shares successfully, the Ricky will periodically run the autograder and the leaderboard will be updated accordingly.
+
+- Then submit the remote project submission form that will show up on the iQuHACK website during the last 8 hours of hacking. The form will ask for a link to your repository and your team members (all of whom have to be remote iQuHACK participants to maintain elligibility).
