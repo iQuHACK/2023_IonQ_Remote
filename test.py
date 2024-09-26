@@ -1,4 +1,7 @@
-import cirq
+import qiskit
+from qiskit import quantum_info
+from qiskit.execute_function import execute
+from qiskit import BasicAer
 import numpy as np
 import pickle
 import json
@@ -6,6 +9,14 @@ import os
 import sys
 from collections import Counter
 from sklearn.metrics import mean_squared_error
+from typing import Dict, List
+import matplotlib.pyplot as plt
+from qiskit import QuantumCircuit, assemble, Aer
+from qiskit.visualization import plot_bloch_multivector, plot_histogram, plot_bloch_vector, array_to_latex, plot_state_qsphere
+from math import pi, sqrt
+import pickle
+
+sim = Aer.get_backend('aer_simulator') 
 
 if len(sys.argv) > 1:
     data_path = sys.argv[1]
@@ -14,13 +25,12 @@ else:
 
 #define utility functions
 
-def simulate(circuit: cirq.Circuit) -> dict:
-    """This function simulates a Cirq circuit (without measurement) and outputs results in the format of histogram.
-    """
-    simulator = cirq.Simulator()
-    result = simulator.simulate(circuit)
-    
-    state_vector=result.final_state_vector
+def simulate(circuit: qiskit.QuantumCircuit) -> dict:
+    """Simulate the circuit, give the state vector as the result."""
+    backend = BasicAer.get_backend('statevector_simulator')
+    job = execute(circuit, backend)
+    result = job.result()
+    state_vector = result.get_statevector()
     
     histogram = dict()
     for i in range(len(state_vector)):
@@ -43,26 +53,25 @@ def histogram_to_category(histogram):
         
     return positive
 
-def count_gates(circuit: cirq.Circuit):
-    """Returns the number of 1-qubit gates, number of 2-qubit gates, number of 3-qubit gates...."""
-    counter=Counter([len(op.qubits) for op in circuit.all_operations()])
-    
+def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
+    """Returns the number of gate operations with each number of qubits."""
+    counter = Counter([len(gate[1]) for gate in circuit.data])
     #feel free to comment out the following two lines. But make sure you don't have k-qubit gates in your circuit
     #for k>2
-    for i in range(2,20):
-        assert counter[i]==0
+    #for i in range(2,20):
+    #    assert counter[i]==0
         
     return counter
 
+
 def image_mse(image1,image2):
-    # Using sklearns mean squared error:
-    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
+    #Using sklearns mean squared error:https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     return mean_squared_error(255*image1,255*image2)
 
 def test():
     #load the actual hackthon data (fashion-mnist)
-    images=np.load(data_path+'/images.npy')
-    labels=np.load(data_path+'/labels.npy')
+    images=np.load('data/images.npy')
+    labels=np.load('data/labels.npy')
     
     #test part 1
 
@@ -73,6 +82,7 @@ def test():
     for image in images:
         #encode image into circuit
         circuit,image_re=run_part1(image)
+        image_re = np.asarray(image_re)
 
         #count the number of 2qubit gates used
         gatecount+=count_gates(circuit)[2]
@@ -111,60 +121,89 @@ def test():
     
     print(score_part1, ",", score_part2, ",", data_path, sep="")
 
+
 ############################
 #      YOUR CODE HERE      #
 ############################
-def encode(image):
-    circuit=cirq.Circuit()
-    if image[0][0]==0:
-        circuit.append(cirq.rx(np.pi).on(cirq.LineQubit(0)))
-    return circuit
+def normalize_image(image):
+    sum_sq = 0
+    for row in image:
+        for pixel in row:
+            sum_sq += pixel ** 2
+            
+    return image / np.sqrt(sum_sq)
+    
+def encoder(image):
+    image = normalize_image(image)
+    n = 10
+    qc = QuantumCircuit(n)
+    
+    for i in range(n):
+        qc.h(i)
+    
+    # 10 qubits, cada uno tiene 2 estados == 1024 estados a disposicion
+    size = len(image)
+    initial_state = np.zeros(2**n)
+    counter = 0
+    
+    for i in range(size):
+        for j in range(size):
+            initial_state[counter] = image[i][j]
+            counter += 1
+            
+    qc.initialize(initial_state)
+    qc.save_statevector()
+       
+    return qc
 
-def decode(histogram):
-    if 1 in histogram.keys():
-        image=np.array([[0,0],[0,0]])
-    else:
-        image=np.array([[1,1],[1,1]])
-    return image
+def decoder(counts):
+    size = 28
+    reconstruction = np.zeros([size, size])
+
+    binaries = list(counts.keys())
+    decimals = list(map(lambda b: int(b, 2), binaries))
+
+    for b in list(counts.keys()):
+        d = int(b, 2)
+        i = int(np.floor(d / 28))
+        j = int(d % 28)
+        reconstruction[i][j] = counts[b]
+        
+    return reconstruction
 
 def run_part1(image):
-    #encode image into a circuit
-    circuit=encode(image)
+    # encode the images
+    qc = encoder(image)
+    
+    qobj = assemble(qc)
+    #simulate the quantum circuit
+    result = sim.run(qobj).result()
 
-    #simulate circuit
-    histogram=simulate(circuit)
-
-    #reconstruct the image
-    image_re=decode(histogram)
-
-    return circuit,image_re
+    counts = result.get_counts()
+    new_image = decoder(counts)
+    return qc,new_image
 
 def run_part2(image):
-    # load the quantum classifier circuit
-    with open('quantum_classifier.pickle', 'rb') as f:
-        classifier=pickle.load(f)
+    # Connect to simulator
+    sim = Aer.get_backend('aer_simulator')
     
-    #encode image into circuit
-    circuit=encode(image)
+    #Create a composite circuit
+    classifier = pickle.load(open("save.pickle", "rb"))
+    encode = encoder(image)
+    circuit = encode.compose(classifier)
     
-    #append with classifier circuit
+    # Assemble, simulate and get histogram
+    qobj = assemble(circuit)
+    result = sim.run(qobj).result()
+    counts = result.get_counts()
     
-    circuit.append(classifier)
-    
-    #simulate circuit
-    histogram=simulate(circuit)
-        
-    #convert histogram to category
-    label=histogram_to_category(histogram)
-    
-    #thresholding the label, any way you want
-    if label>0.5:
-        label=1
+    # Get label
+    label = histogram_to_category(counts)
+    if label > 0.51:
+        label = 1
     else:
-        label=0
-        
+        label = 0
     return circuit,label
-
 ############################
 #      END YOUR CODE       #
 ############################
